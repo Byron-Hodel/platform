@@ -16,6 +16,7 @@ if(WIN32)
 		linux/linux_internal.h
 		linux/linux_platform.c
 		linux/xlib_window.h
+		linux/xlib_window.c
 	)
 	target_link_libraries(platform
 		X11
