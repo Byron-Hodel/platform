@@ -5,11 +5,7 @@
 
 #define PLATFORM_TEXT_BOLD 1
 #define PLATFORM_TEXT_UNDERLINE 2
-
-#define PLATFORM_COLOR_NEGITIVE_BIT  1
-#define PLATFORM_COLOR_BOLD_BIT      2
-#define PLATFORM_COLOR_UNDERLINE_BIT 4
-
+#define PLATFORM_TEXT_NEGITIVE  4
 
 #define PLATFORM_COLOR_NORMAL         0
 #define PLATFORM_COLOR_BLACK          1
@@ -31,7 +27,6 @@
 
 
 typedef struct {
-	// TODO: not sure what to put here yet.
 	char* app_name;
 } platform_context_settings_t;
 
@@ -68,7 +63,7 @@ void platform_set_window_size(const platform_context_t* context, const platform_
 const char* platform_get_window_name(const platform_context_t* context, const platform_window_t* window);
 void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name);
 
-void platform_handle_events(void);
+void platform_handle_events(const platform_context_t* context);
 
 void platform_terminal_print(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags);
 void platform_terminal_print_error(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags);
