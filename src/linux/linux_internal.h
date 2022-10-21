@@ -18,6 +18,8 @@ typedef struct {
 
 typedef struct {
 	Display* dpy;
+	Atom net_wm_name;
+	Atom utf8_string;
 } xlib_context_t;
 
 struct platform_context_t {
@@ -27,5 +29,7 @@ struct platform_context_t {
 	linux_window_functions_t window_functions;
 };
 
+void* _allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator);
+void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor);
 
 #endif // LINUX_INTERNAL_H

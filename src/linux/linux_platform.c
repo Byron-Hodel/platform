@@ -8,7 +8,7 @@
 #include <malloc.h>
 #include <time.h>
 
-static inline void* _allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
+void* _allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
 	if(allocator != NULL) {
 		return allocator->alloc(allocator->user_data, size, alignment);
 	}
@@ -17,7 +17,7 @@ static inline void* _allocator_alloc(uint64_t size, uint64_t alignment, platform
 	}
 }
 
-static inline void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
+void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
 	if(alloctor != NULL) {
 		alloctor->free(alloctor->user_data, addr);
 	}
@@ -27,7 +27,10 @@ static inline void _allocator_free(void* addr, platform_allocation_callbacks_t* 
 }
 
 platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
+	xlib_context_t xlib_contex;
+	if(xlib_init_context(&xlib_contex) == 0) return NULL;
 	platform_context_t* context = _allocator_alloc(sizeof(platform_context_t), 4, allocator);
+	context->xlib = xlib_contex;
 	context->window_functions = XLIB_WINDOW_FUNCTIONS;
 	return context;
 }
