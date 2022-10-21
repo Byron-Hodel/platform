@@ -1,4 +1,5 @@
 #include <platform/platform.h>
+#include <stdio.h>
 
 #ifndef NULL
 #define NULL (void*)0
@@ -8,6 +9,24 @@ int main(void) {
 	platform_terminal_print("Program Start...\n", PLATFORM_COLOR_BLUE, 0, 0);
 	platform_context_t* platform_context = platform_create_context(NULL, NULL);
 	if(platform_context == NULL) return -1;
+
+	platform_window_create_info_t create_info;
+	create_info.name = "Cat Window";
+	create_info.x = 100;
+	create_info.y = 100;
+	create_info.width = 500;
+	create_info.height = 300;
+	create_info.parent = NULL;
+
+	platform_window_t* window = platform_create_window(platform_context, create_info, NULL);
+
+	while(1) {
+		platform_handle_events();
+		platform_sleep_miliseconds(16);
+	}
+
+	platform_destroy_window(platform_context, window, NULL);
+
 
 	platform_terminal_print("Created Platform Context.\n", PLATFORM_COLOR_GREEN, 0, 0);
 
