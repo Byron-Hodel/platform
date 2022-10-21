@@ -3,14 +3,36 @@
 
 #include "linux_internal.h"
 #include "xlib_window.h"
+#include <unistd.h>
 #include <stdio.h>
+#include <malloc.h>
+#include <time.h>
+
+static inline void* _allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
+	if(allocator != NULL) {
+		return allocator->alloc(allocator->user_data, size, alignment);
+	}
+	else {
+		return memalign(size, alignment);
+	}
+}
+
+static inline void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
+	if(alloctor != NULL) {
+		alloctor->free(alloctor->user_data, addr);
+	}
+	else {
+		free(addr);
+	}
+}
 
 platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
-	platform_context_t* context = NULL;
+	platform_context_t* context = _allocator_alloc(sizeof(platform_context_t), 4, allocator);
+	context->window_functions = XLIB_WINDOW_FUNCTIONS;
 	return context;
 }
 void platform_destroy_context(platform_context_t* context, platform_allocation_callbacks_t* allocator) {
-
+	_allocator_free(context, allocator);
 }
 
 
@@ -24,7 +46,7 @@ void platform_get_window_position(const platform_context_t* context, const platf
 	context->window_functions.get_window_position(context, window, x, y);
 }
 void platform_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height) {
-	context->window_functions.platform_get_window_size(context, window, width, height);
+	context->window_functions.get_window_size(context, window, width, height);
 }
 void platform_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y) {
 	context->window_functions.set_window_position(context, window, x, y);
@@ -39,6 +61,9 @@ void platform_set_window_name(const platform_context_t* context, platform_window
 	context->window_functions.set_window_name(context, window, name);
 }
 
+void platform_handle_events(const platform_context_t* context) {
+	context->window_functions.handle_events(context);
+}
 
 // NOTE: add 10 to get background color
 static const uint32_t color_table[] = {
@@ -77,10 +102,11 @@ static inline void _terminal_print(const char* msg, const uint8_t forground, con
 	prop_str += sprintf(prop_str, "m");
 	fputs(properties, stream);
 	uint32_t index = 0;
+	// before you ask, yes, I know this is slow
 	while(msg[index] != '\0') {
 		if(msg[index] == '\n') {
-			// replace newlines with this so that any background there is will not extend
-			// past the text
+			// replacing newlines with "\033[0m\n" prevents
+			// the background from extending past the text
 			fputs("\033[0m\n", stream);
 			fputs(properties, stream);
 			index++;
@@ -103,7 +129,18 @@ uint64_t platform_get_timestamp(void) {
 	return 0;
 }
 void platform_sleep_miliseconds(const uint32_t miliseconds) {
-	
+	#if _BSD_SOURCE || (_XOPEN_SOURCE >= 500 || \
+	    _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED) && \
+	    !(_POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700)
+
+		usleep(miliseconds * 1000);
+	#elif _POSIX_C_SOURCE >= 199309L
+		struct timespec sleep_time;
+		struct timespec remaining;
+		sleep_time.tv_sec = miliseconds / 1000;
+		sleep_time.tv_nsec = (miliseconds - sleep_time.tv_sec * 1000) * 1000000;
+		nanosleep(&sleep_time, &remaining);
+	#endif
 }
 
 #endif // LINUX_PLATFORM_H
