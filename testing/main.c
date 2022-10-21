@@ -19,6 +19,7 @@ int main(void) {
 	create_info.parent = NULL;
 
 	platform_window_t* window = platform_create_window(platform_context, create_info, NULL);
+	if(window == NULL) return platform_destroy_context(platform_context, NULL), 0;
 
 	uint32_t i = 0;
 	while(1) {
