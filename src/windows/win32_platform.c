@@ -123,7 +123,8 @@ void platform_set_window_name(const platform_context_t* context, platform_window
 
 }
 
-void platform_handle_events(void) {
+void platform_handle_events(const platform_context_t* context) {
+	// while context is not needed here, it is needed by the linux platform
 	MSG msg;
 	while(PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
