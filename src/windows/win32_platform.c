@@ -105,22 +105,42 @@ void platform_destroy_window(platform_context_t* context, platform_window_t* win
 	_allocator_free(window, allocator);
 }
 void platform_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y) {
-	
+	RECT client_rect;
+	GetClientRect(window->handle, &client_rect);
+	if(x) *x = client_rect.left;
+	if(y) *y = client_rect.top;
 }
 void platform_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height) {
-
+	RECT cr;
+	GetClientRect(window->handle, &cr);
+	if(width) *width = cr.right - cr.left;
+	if(width) *width = cr.bottom - cr.top;
 }
 void platform_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y) {
-
+	RECT wr;
+	GetClientRect(window->handle, &wr);
+	uint32_t width = wr.right - wr.left;
+	uint32_t height = wr.bottom - wr.top;
+	wr.left = x;
+	wr.top = y;
+	wr.right = x + width;
+	wr.bottom = y + height;
+	LONG window_style = GetWindowLongA(window->handle, GWL_STYLE);
+	MoveWindow(window->handle, wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top, FALSE);
 }
 void platform_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height) {
-
+	RECT wr;
+	GetClientRect(window->handle, &wr);
+	wr.right = wr.left + width;
+	wr.bottom = wr.top + height;
+	LONG window_style = GetWindowLongA(window->handle, GWL_STYLE);
+	MoveWindow(window->handle, wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top, FALSE);
 }
-const char* platform_get_window_name(const platform_context_t* context, const platform_window_t* window) {
-	return NULL;
+void platform_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
+	GetWindowTextA(window->handle, name, max_len);
 }
 void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
-
+	SetWindowTextA(window->handle, name);
 }
 
 void platform_handle_events(const platform_context_t* context) {
@@ -132,15 +152,65 @@ void platform_handle_events(const platform_context_t* context) {
 	}
 }
 
-static inline void _terminal_print(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags, void* stream) {
+static const WORD forground_color_table[] = {
+	0, 0,
+	FOREGROUND_RED,
+	FOREGROUND_GREEN,
+	FOREGROUND_RED | FOREGROUND_GREEN,
+	FOREGROUND_BLUE,
+	FOREGROUND_RED | FOREGROUND_BLUE,
+	FOREGROUND_GREEN | FOREGROUND_BLUE,
+	FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
+	FOREGROUND_INTENSITY,
+	FOREGROUND_RED | FOREGROUND_INTENSITY,
+	FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+	FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+	FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+	FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+	FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+	FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+};
+static const WORD background_color_table[] = {
+	0, 0,
+	BACKGROUND_RED,
+	BACKGROUND_GREEN,
+	BACKGROUND_RED | BACKGROUND_GREEN,
+	BACKGROUND_BLUE,
+	BACKGROUND_RED | BACKGROUND_BLUE,
+	BACKGROUND_GREEN | BACKGROUND_BLUE,
+	BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE,
+	BACKGROUND_INTENSITY,
+	BACKGROUND_RED | BACKGROUND_INTENSITY,
+	BACKGROUND_GREEN | BACKGROUND_INTENSITY,
+	BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_INTENSITY,
+	BACKGROUND_BLUE | BACKGROUND_INTENSITY,
+	BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_INTENSITY,
+	BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY,
+	BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_INTENSITY,
+};
 
+// TODO: write implimentation for virtual terminal
+static inline void _terminal_print(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags, HANDLE handle) {
+	WORD attributes = 0;
+	if(forground > 0) attributes |= forground_color_table[forground];
+	if(background > 0) attributes |= background_color_table[background];
+	if(flags & PLATFORM_TEXT_NEGITIVE) attributes |= COMMON_LVB_REVERSE_VIDEO;
+	if(flags & PLATFORM_TEXT_UNDERLINE) attributes |= COMMON_LVB_UNDERSCORE;
+	SetConsoleTextAttribute(handle, attributes);
+	uint32_t msg_len = 0;
+	DWORD bytes_written = 0;
+	while(msg[msg_len] != '\0') msg_len++;
+	WriteConsole(handle, msg, msg_len, &bytes_written, NULL);
+	SetConsoleTextAttribute(handle, 0);
 }
 
 void platform_terminal_print(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags) {
-	
+	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	_terminal_print(msg, forground, background, flags, stdout_handle);
 }
 void platform_terminal_print_error(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags) {
-
+	HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
+	_terminal_print(msg, forground, background, flags, stderr_handle);
 }
 
 
