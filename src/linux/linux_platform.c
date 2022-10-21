@@ -57,8 +57,8 @@ void platform_set_window_position(const platform_context_t* context, const platf
 void platform_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height) {
 	context->window_functions.set_window_size(context, window, width, height);
 }
-const char* platform_get_window_name(const platform_context_t* context, const platform_window_t* window) {
-	return context->window_functions.get_window_name(context, window);
+void get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
+	return context->window_functions.get_window_name(context, window, name, max_len);
 }
 void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
 	context->window_functions.set_window_name(context, window, name);
