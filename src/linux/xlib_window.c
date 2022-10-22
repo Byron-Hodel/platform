@@ -67,8 +67,8 @@ void xlib_set_window_position(const platform_context_t* context, const platform_
 void xlib_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height) {
 	XResizeWindow(context->xlib.dpy, window->handle, width, height);
 }
-const char* xlib_get_window_name(const platform_context_t* context, const platform_window_t* window) {
-	return NULL;
+void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
+	
 }
 void xlib_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
 	if(name == NULL) {

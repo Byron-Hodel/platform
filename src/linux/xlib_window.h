@@ -21,7 +21,7 @@ void xlib_get_window_position(const platform_context_t* context, const platform_
 void xlib_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height);
 void xlib_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y);
 void xlib_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height);
-const char* xlib_get_window_name(const platform_context_t* context, const platform_window_t* window);
+void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len);
 void xlib_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name);
 void xlib_handle_events(const platform_context_t* context);
 
