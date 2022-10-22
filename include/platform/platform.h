@@ -25,6 +25,11 @@
 #define PLATFORM_COLOR_BRIGHT_CYAN    15
 #define PLATFORM_COLOR_BRIGHT_WHITE   16
 
+// WF = window flag
+#define PLATFORM_WF_NORMAL    0
+#define PLATFORM_WF_NO_BORDER 1
+#define PLATFORM_WF_POPUP     2 // popups will have no decorations
+#define PLATFORM_WF_UNMAPPED  4 // will start unmapped
 
 typedef struct {
 	char* app_name;
