@@ -1,6 +1,14 @@
 #include "xlib_window.h"
 #include "X11/Xatom.h"
 
+typedef struct {
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long          inputMode;
+	unsigned long status;
+} motif_hints_t;
+
 int8_t xlib_init_context(xlib_context_t* context);
 void xlib_cleanup_context(xlib_context_t* context);
 
@@ -11,6 +19,7 @@ struct platform_window_t {
 int8_t xlib_init_context(xlib_context_t* context) {
 	context->dpy = XOpenDisplay(NULL);
 	if(context->dpy == NULL) return 0;
+	context->motif_wm_hints = XInternAtom(context->dpy, "_MOTIF_WM_HINTS", 1);
 	context->net_wm_name = XInternAtom(context->dpy, "NET_WM_NAME", 0);
 	context->utf8_string = XInternAtom(context->dpy, "UTF8_STRING", 0);
 	return 1;
@@ -25,9 +34,14 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	int depth = DefaultDepth(context->xlib.dpy, scr);
 	Visual* visual = DefaultVisual(context->xlib.dpy, scr);
 
-	uint64_t attributes_mask = CWBackPixel;
+	uint64_t attributes_mask = CWBackPixel | CWOverrideRedirect;
 	XSetWindowAttributes attributes;
 	attributes.background_pixel = WhitePixel(context->xlib.dpy, scr);
+	attributes.override_redirect = 0;
+
+	if(create_info.flags & PLATFORM_WF_POPUP) {
+		attributes.override_redirect = 1;
+	}
 
 	Window parent_handle = create_info.parent != NULL ? create_info.parent->handle : RootWindow(context->xlib.dpy, scr);
 	Window handle = XCreateWindow(context->xlib.dpy, parent_handle, create_info.x, create_info.y,
@@ -35,9 +49,25 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	                              visual, attributes_mask, &attributes);
 
 	if(handle == BadWindow || handle == BadValue) return NULL;
-	XMapRaised(context->xlib.dpy, handle);
-	XFlush(context->xlib.dpy);
 
+	if(create_info.flags & PLATFORM_WF_NO_BORDER && create_info.parent == NULL) {
+		if(context->xlib.motif_wm_hints != None) {
+			motif_hints_t h = {0};
+			h.flags = 2;
+			XChangeProperty(context->xlib.dpy, handle, context->xlib.motif_wm_hints,
+							context->xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
+		}
+		else {
+			// TODO: maybe try using extended window manager hints to get borderless window
+		}
+	}
+
+	if(create_info.flags & PLATFORM_WF_POPUP && create_info.parent != NULL) {
+		XSetTransientForHint(context->xlib.dpy, handle, create_info.parent->handle);
+	}
+
+	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) XMapRaised(context->xlib.dpy, handle);
+	XFlush(context->xlib.dpy);
 	platform_window_t* window = _allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
 

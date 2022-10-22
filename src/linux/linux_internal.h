@@ -18,6 +18,7 @@ typedef struct {
 
 typedef struct {
 	Display* dpy;
+	Atom motif_wm_hints;
 	Atom net_wm_name;
 	Atom utf8_string;
 } xlib_context_t;
