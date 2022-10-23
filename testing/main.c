@@ -28,6 +28,7 @@ int main(void) {
 		char buffer[32] = {0};
 		sprintf(buffer, "\rIteration: %d", i++);
 		platform_terminal_print(buffer, PLATFORM_COLOR_BLUE, 0, PLATFORM_TEXT_BOLD);
+		putchar('\r');
 		platform_sleep_miliseconds(16);
 	}
 
