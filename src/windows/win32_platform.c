@@ -14,7 +14,7 @@ struct platform_window_t {
 	HWND handle;
 };
 
-static inline void* _allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
+static inline void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
 	if(allocator != NULL) {
 		return allocator->alloc(allocator->user_data, size, alignment);
 	}
@@ -23,7 +23,7 @@ static inline void* _allocator_alloc(uint64_t size, uint64_t alignment, platform
 	}
 }
 
-static inline void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
+static inline void platform_allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
 	if(alloctor != NULL) {
 		alloctor->free(alloctor->user_data, addr);
 	}
@@ -62,7 +62,7 @@ platform_context_t* platform_create_context(const platform_context_settings_t* s
 	ATOM class_result = RegisterClassExA(&class);
 	if(class_result == 0) return NULL;
 
-	platform_context_t* context = _allocator_alloc(sizeof(platform_context_t), 4, allocator);
+	platform_context_t* context = platform_allocator_alloc(sizeof(platform_context_t), 4, allocator);
 	context->instance = instance;
 	context->class_name = DEFAULT_CLASS_NAME;
 	return context;
@@ -70,7 +70,7 @@ platform_context_t* platform_create_context(const platform_context_settings_t* s
 
 void platform_destroy_context(platform_context_t* context, platform_allocation_callbacks_t* allocator) {
 	UnregisterClassA(context->class_name, context->instance);
-	_allocator_free(context, allocator);
+	platform_allocator_free(context, allocator);
 }
 
 
@@ -96,13 +96,13 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 
 	ShowWindow(handle, SHOW_OPENWINDOW);
 
-	platform_window_t* window = _allocator_alloc(sizeof(platform_window_t), 4, allocator);
+	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
 	return window;
 }
 void platform_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
 	DestroyWindow(window->handle);
-	_allocator_free(window, allocator);
+	platform_allocator_free(window, allocator);
 }
 void platform_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y) {
 	RECT client_rect;
