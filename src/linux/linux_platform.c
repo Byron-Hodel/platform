@@ -5,19 +5,19 @@
 #include "xlib_window.h"
 #include <unistd.h>
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <time.h>
 
-void* _allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
+void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
 	if(allocator != NULL) {
 		return allocator->alloc(allocator->user_data, size, alignment);
 	}
 	else {
-		return memalign(size, alignment);
+		return aligned_alloc(alignment, size);
 	}
 }
 
-void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
+void platform_allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
 	if(alloctor != NULL) {
 		alloctor->free(alloctor->user_data, addr);
 	}
@@ -29,13 +29,13 @@ void _allocator_free(void* addr, platform_allocation_callbacks_t* alloctor) {
 platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
 	xlib_context_t xlib_contex;
 	if(xlib_init_context(&xlib_contex) == 0) return NULL;
-	platform_context_t* context = _allocator_alloc(sizeof(platform_context_t), 4, allocator);
+	platform_context_t* context = platform_allocator_alloc(sizeof(platform_context_t), 4, allocator);
 	context->xlib = xlib_contex;
 	context->window_functions = XLIB_WINDOW_FUNCTIONS;
 	return context;
 }
 void platform_destroy_context(platform_context_t* context, platform_allocation_callbacks_t* allocator) {
-	_allocator_free(context, allocator);
+	platform_allocator_free(context, allocator);
 }
 
 
