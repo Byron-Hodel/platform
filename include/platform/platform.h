@@ -64,10 +64,13 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 void platform_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator);
 void platform_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y);
 void platform_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height);
-void platform_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y);
-void platform_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height);
+void platform_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y);
+void platform_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height);
 void platform_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len);
 void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name);
+
+void platform_map_window(const platform_context_t* context, platform_window_t* window);
+void platform_unmap_window(const platform_context_t* context, platform_window_t* window);
 
 void platform_handle_events(const platform_context_t* context);
 
