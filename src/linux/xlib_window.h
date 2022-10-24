@@ -5,10 +5,16 @@
 #include <X11/Xlib.h>
 
 #define XLIB_WINDOW_FUNCTIONS (linux_window_functions_t) { \
-	.create_window = xlib_create_window, .destroy_window = xlib_destroy_window, \
-	.get_window_position = xlib_get_window_position, .get_window_size = xlib_get_window_size, \
-	.set_window_position = xlib_set_window_position, .set_window_size = xlib_set_window_size, \
-	.get_window_name = xlib_get_window_name, .set_window_name = xlib_set_window_name, \
+	.create_window = xlib_create_window, \
+	.destroy_window = xlib_destroy_window, \
+	.get_window_position = xlib_get_window_position, \
+	.get_window_size = xlib_get_window_size, \
+	.set_window_position = xlib_set_window_position, \
+	.set_window_size = xlib_set_window_size, \
+	.get_window_name = xlib_get_window_name, \
+	.set_window_name = xlib_set_window_name, \
+	.map_window = xlib_map_window, \
+	.unmap_window = xlib_unmap_window, \
 	.handle_events = xlib_handle_events \
 }
 
@@ -19,10 +25,14 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 void xlib_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator);
 void xlib_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y);
 void xlib_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height);
-void xlib_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y);
-void xlib_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height);
+void xlib_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y);
+void xlib_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height);
 void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len);
 void xlib_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name);
+
+void xlib_map_window(const platform_context_t* context, platform_window_t* window);
+void xlib_unmap_window(const platform_context_t* context, platform_window_t* window);
+
 void xlib_handle_events(const platform_context_t* context);
 
 #endif // XLIB_WINDOW_H
