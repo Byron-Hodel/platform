@@ -22,6 +22,7 @@ typedef struct {
 	Display* dpy;
 	Atom motif_wm_hints;
 	Atom net_wm_name;
+	Atom net_wm_icon_name;
 	Atom utf8_string;
 	Atom net_supported;
 	Atom net_wm_window_type;
