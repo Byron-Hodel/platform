@@ -20,7 +20,7 @@ struct platform_window_t {
 	int8_t mapped;
 };
 
-static Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t supported_atom_count) {
+static inline Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t supported_atom_count) {
 	for(int i = 0; i < supported_atom_count; i++) {
 		if(supported_atoms[i] == a) return a;
 	}
@@ -39,6 +39,8 @@ int8_t xlib_init_context(xlib_context_t* context) {
 	context->net_wm_window_type_splash = XInternAtom(context->dpy, "_NET_WM_WINDOW_TYPE_SPLASH", 0);
 	context->net_wm_window_type_dialog = XInternAtom(context->dpy, "_NET_WM_WINDOW_TYPE_DIALOG", 0);
 	context->net_wm_window_type_menu = XInternAtom(context->dpy, "_NET_WM_WINDOW_TYPE_DIALOG", 0);
+	context->net_wm_allowed_actions = XInternAtom(context->dpy, "_NET_WM_ALLOWED_ACTIONS", 0);
+	context->net_wm_action_resize = XInternAtom(context->dpy, "_NET_WM_ACTION_RESIZE", 0);
 
 
 	Window root_window = XRootWindow(context->dpy, XDefaultScreen(context->dpy));
@@ -56,6 +58,8 @@ int8_t xlib_init_context(xlib_context_t* context) {
 	                                                    context->supported_atoms, context->supported_atom_count);
 	context->net_wm_window_type_menu = atom_supported(context->net_wm_window_type_menu,
 	                                                  context->supported_atoms, context->supported_atom_count);
+	context->net_wm_allowed_actions = atom_supported(context->net_wm_allowed_actions,
+	                                                 context->supported_atoms, context->supported_atom_count);
 
 	return 1;
 }
@@ -142,7 +146,18 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	}
 
 	if((create_info.flags & PLATFORM_WF_RESIZABLE) == 0) {
-		
+		XSizeHints size_hints;
+		size_hints.min_width = create_info.width;
+		size_hints.max_width = create_info.width;
+		size_hints.min_height = create_info.height;
+		size_hints.max_height = create_info.height;
+		size_hints.flags = PMinSize | PMaxSize;
+		XSetWMNormalHints(context->xlib.dpy, handle, &size_hints);
+		if(context->xlib.net_wm_allowed_actions != None) {
+			Atom allowed_actions[1] = { context->xlib.net_wm_action_resize };
+			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_allowed_actions,
+			                XA_ATOM, 32, PropModeAppend, (const uint8_t*)allowed_actions, 1);
+		}
 	}
 
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
@@ -231,12 +246,7 @@ void xlib_handle_events(const platform_context_t* context) {
 			//platform_terminal_print("Property Notify Event.\n", 0, 0, 0);
 			break;
 		case ResizeRequest:
-			if(window->active_flags & PLATFORM_WF_RESIZABLE && window->mapped == 1) {
-				xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
-			}
-			else if(window->mapped == 0) {
-				xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
-			}
+			xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
 			break;
 		case CirculateNotify:
 			platform_terminal_print("Circulate Notify Event.\n", 0, 0, 0);
