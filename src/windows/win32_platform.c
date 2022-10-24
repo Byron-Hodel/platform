@@ -78,7 +78,7 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 	DWORD window_style = WS_SIZEBOX;
 	if((create_info.flags & PLATFORM_WF_NO_BORDER) == 0 && (create_info.flags & PLATFORM_WF_SPLASH) == 0) {
 		window_style |= WS_SYSMENU;
-		if((create_info.flags & PLATFORM_WF_POPUP) == 0) {
+		if((create_info.flags & PLATFORM_WF_DIALOG) == 0) {
 			window_style |= WS_MINIMIZEBOX;
 			window_style |= WS_MAXIMIZEBOX;
 		}
