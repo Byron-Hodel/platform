@@ -1,6 +1,9 @@
 #include "platform/platform.h"
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <Windows.h>
+#include <timeapi.h>
 #include <malloc.h>
 
 #define DEFAULT_CLASS_NAME "WIN32_PLATFORM_CLASS"
@@ -75,22 +78,24 @@ void platform_destroy_context(platform_context_t* context, platform_allocation_c
 
 
 platform_window_t* platform_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
-	DWORD window_style = WS_SIZEBOX;
-	if((create_info.flags & PLATFORM_WF_NO_BORDER) == 0 && (create_info.flags & PLATFORM_WF_SPLASH) == 0) {
-		window_style |= WS_SYSMENU;
-		if((create_info.flags & PLATFORM_WF_DIALOG) == 0) {
-			window_style |= WS_MINIMIZEBOX;
-			window_style |= WS_MAXIMIZEBOX;
+	DWORD window_style = WS_BORDER;
+	if(create_info.flags == PLATFORM_WF_NORMAL) {
+		window_style = WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_BORDER;
+	}
+	else {
+		if((create_info.flags & PLATFORM_WF_NO_BORDER) == 0 && (create_info.flags & PLATFORM_WF_SPLASH) == 0) {
+			window_style |= WS_SYSMENU;
+			if((create_info.flags & PLATFORM_WF_DIALOG) == 0) {
+				window_style |= WS_MINIMIZEBOX;
+				if(create_info.flags & PLATFORM_WF_RESIZABLE) window_style |= WS_MAXIMIZEBOX;
+			}
 		}
-	}
-	else {
-		window_style |= WS_POPUP; // this prevents the window title from showing on the window
-	}
-	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) {
-		window_style |= WS_VISIBLE;
-	}
-	else {
-		window_style |= WS_ICONIC;
+		else {
+			window_style |= WS_POPUP; // this prevents the window title from showing on the window
+		}
+		if(create_info.flags & PLATFORM_WF_RESIZABLE) {
+			window_style |= WS_SIZEBOX;
+		}
 	}
 
 	RECT wr;
@@ -109,6 +114,8 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 	if(handle == NULL) {
 		return NULL;
 	}
+
+	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) ShowWindow(handle, SW_NORMAL);
 
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
