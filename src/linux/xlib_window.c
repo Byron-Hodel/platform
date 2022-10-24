@@ -16,6 +16,9 @@ void xlib_cleanup_context(xlib_context_t* context);
 struct platform_window_t {
 	Window handle;
 	uint32_t active_flags;
+	void* user_data;
+	int32_t x, y;
+	int8_t is_mapped;
 };
 
 static Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t supported_atom_count) {
@@ -68,7 +71,7 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	                      ExposureMask | PropertyChangeMask;
 	uint64_t attributes_mask = CWBackPixel | CWOverrideRedirect | CWEventMask;
 	XSetWindowAttributes attributes = {0};
-	attributes.background_pixel = WhitePixel(context->xlib.dpy, scr);
+	attributes.background_pixel = BlackPixel(context->xlib.dpy, scr);
 	attributes.override_redirect = 0;
 	attributes.event_mask = event_mask;
 
@@ -86,8 +89,12 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 			XChangeProperty(context->xlib.dpy, handle, context->xlib.motif_wm_hints,
 			                context->xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
 		}
+		else if(context->xlib.net_wm_window_type_splash != None) {
+			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
+			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_splash, 1);
+		}
 		else {
-			// TODO: maybe try using extended window manager hints to get borderless window
+			// last resort
 			attributes.override_redirect = 1;
 			XChangeWindowAttributes(context->xlib.dpy, handle, attributes_mask, &attributes);
 		}
@@ -97,30 +104,18 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 		XSetTransientForHint(context->xlib.dpy, handle, create_info.parent->handle);
 	}
 
-	if(create_info.flags & PLATFORM_WF_FLOATING && attributes.override_redirect == 0) {
-		// a window is probally not floating if the size specified is not equal to the actual size
-		uint32_t w = create_info.width, h = create_info.height;
-		if(context->xlib.net_wm_window_type_splash != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-							PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_splash, 1);
-		}
-		else if(context->xlib.net_wm_window_type_dialog != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-							PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_dialog, 1);
-		}
-		else {
 
-		}
-	}
-
-	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) XMapRaised(context->xlib.dpy, handle);
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
 	window->active_flags = create_info.flags;
+	window->user_data = NULL;
+	window->x = create_info.x;
+	window->y = create_info.y;
+	window->is_mapped = (create_info.flags & PLATFORM_WF_UNMAPPED) == 0;
 	xlib_set_window_name(context, window, create_info.name);
-	// incase window position was not honored by window manager
-	xlib_set_window_position(context, window, create_info.x, create_info.y);
 
+	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) xlib_map_window(context, window);
+	XSaveContext(context->xlib.dpy, handle, 0, (const char*)window);
 	return window;
 }
 void xlib_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
@@ -139,11 +134,18 @@ void xlib_get_window_size(const platform_context_t* context, const platform_wind
 	if(width) *width = attributes.width;
 	if(height) *height = attributes.height;
 }
-void xlib_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y) {
+void xlib_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y) {
+	window->x = x;
+	window->y = y;
 	XMoveWindow(context->xlib.dpy, window->handle, x, y);
 }
-void xlib_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height) {
+void xlib_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
+	XSetWindowAttributes new_attributes;
+	new_attributes.override_redirect = 1;
+	XChangeWindowAttributes(context->xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
 	XResizeWindow(context->xlib.dpy, window->handle, width, height);
+	new_attributes.override_redirect = 0;
+	XChangeWindowAttributes(context->xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
 }
 void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
 	
@@ -162,32 +164,56 @@ void xlib_set_window_name(const platform_context_t* context, platform_window_t* 
 						XA_STRING, 8, PropModeReplace, (const uint8_t*)name, len);
 	}
 }
+
+void xlib_map_window(const platform_context_t* context, platform_window_t* window) {
+	XMapRaised(context->xlib.dpy, window->handle);
+}
+void xlib_unmap_window(const platform_context_t* context, platform_window_t* window) {
+	
+}
+
 void xlib_handle_events(const platform_context_t* context) {
 	uint32_t event_count = XPending(context->xlib.dpy);
 	for(uint32_t i = 0; i < event_count; i++) {
 		XEvent e;
 		XNextEvent(context->xlib.dpy, &e);
 
-		XSetWindowAttributes new_attributes;
+		platform_window_t* window;
+		int context_result = XFindContext(context->xlib.dpy, e.xany.window, 0, (XPointer*)&window);
+		if(context_result != 0) continue;
+
+		XWindowAttributes attributes;
+		XGetWindowAttributes(context->xlib.dpy, window->handle, &attributes);
 
 		switch (e.type)
 		{
 		case PropertyNotify:
-			platform_terminal_print("Property Notify Event.\n", 0, 0, 0);
+			//platform_terminal_print("Property Notify Event.\n", 0, 0, 0);
 			break;
 		case ResizeRequest:
-			// TODO: Check if window should be floating, if so, then there may be an issue
-			new_attributes.override_redirect = 1;
-			XChangeWindowAttributes(context->xlib.dpy, e.xresizerequest.window, CWOverrideRedirect, &new_attributes);
-			XResizeWindow(e.xresizerequest.display, e.xresizerequest.window, e.xresizerequest.width, e.xresizerequest.height);
-			new_attributes.override_redirect = 0;
-			XChangeWindowAttributes(context->xlib.dpy, e.xresizerequest.window, CWOverrideRedirect, &new_attributes);
+			// if the window manager attempts to resize an unmapped floating window, it is probally a tiling window manager
+			if(window->is_mapped == 0) {
+				if(context->xlib.net_wm_window_type_dialog != None) {
+					XChangeProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
+									PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_dialog, 1);
+				}
+				else if(context->xlib.net_wm_window_type_splash != None) {
+					XChangeProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
+									PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_splash, 1);
+				}
+				else {
+
+				}
+			}
+			platform_terminal_print("Resize Request Event.\n", 0, 0, 0);
+			xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
 			break;
 		case CirculateNotify:
 			platform_terminal_print("Circulate Notify Event.\n", 0, 0, 0);
 			break;
 		case ConfigureNotify:
-			platform_terminal_print("Configure Notify Event.\n", 0, 0, 0);
+			window->x = e.xconfigure.x;
+			window->y = e.xconfigure.y;
 			break;
 		case DestroyNotify:
 			platform_terminal_print("Destroy Notify Event.\n", 0, 0, 0);
@@ -197,6 +223,7 @@ void xlib_handle_events(const platform_context_t* context) {
 			break;
 		case MapNotify:
 			platform_terminal_print("Map Notify Event.\n", 0, 0, 0);
+			window->is_mapped = 1;
 			break;
 		case ReparentNotify:
 			platform_terminal_print("Reparent Notify Event.\n", 0, 0, 0);
@@ -222,7 +249,6 @@ void xlib_handle_events(const platform_context_t* context) {
 		case SelectionClear: break;
 		case SelectionNotify: break;
 		case Expose:
-			platform_terminal_print("Expose Event.\n", 0, 0, 0);
 			break;
 		default:
 			platform_terminal_print("Unkown Event.\n", 0, 0, 0);
