@@ -51,10 +51,10 @@ void platform_get_window_position(const platform_context_t* context, const platf
 void platform_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height) {
 	context->window_functions.get_window_size(context, window, width, height);
 }
-void platform_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y) {
+void platform_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y) {
 	context->window_functions.set_window_position(context, window, x, y);
 }
-void platform_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height) {
+void platform_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
 	context->window_functions.set_window_size(context, window, width, height);
 }
 void get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
@@ -62,6 +62,13 @@ void get_window_name(const platform_context_t* context, const platform_window_t*
 }
 void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
 	context->window_functions.set_window_name(context, window, name);
+}
+
+void platform_map_window(const platform_context_t* context, platform_window_t* window) {
+	context->window_functions.map_window(context, window);
+}
+void platform_unmap_window(const platform_context_t* context, platform_window_t* window) {
+	context->window_functions.unmap_window(context, window);
 }
 
 void platform_handle_events(const platform_context_t* context) {
