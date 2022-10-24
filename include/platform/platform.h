@@ -29,7 +29,7 @@
 #define PLATFORM_WF_NORMAL    0
 #define PLATFORM_WF_NO_BORDER 1
 #define PLATFORM_WF_POPUP     2
-#define PLATFORM_WF_FLOATING  4 // try to make the window floating
+#define PLATFORM_WF_SPLASH    4
 #define PLATFORM_WF_UNMAPPED  8 // will start unmapped
 
 typedef struct {

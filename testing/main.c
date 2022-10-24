@@ -17,7 +17,7 @@ int main(void) {
 	create_info.width = 500;
 	create_info.height = 300;
 	create_info.parent = NULL;
-	create_info.flags = PLATFORM_WF_FLOATING;
+	create_info.flags = PLATFORM_WF_SPLASH;
 
 	platform_window_t* window = platform_create_window(platform_context, create_info, NULL);
 	if(window == NULL) return platform_destroy_context(platform_context, NULL), 0;
