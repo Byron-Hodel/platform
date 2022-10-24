@@ -75,7 +75,23 @@ void platform_destroy_context(platform_context_t* context, platform_allocation_c
 
 
 platform_window_t* platform_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
-	DWORD window_style = WS_BORDER | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+	DWORD window_style = WS_SIZEBOX;
+	if((create_info.flags & PLATFORM_WF_NO_BORDER) == 0 && (create_info.flags & PLATFORM_WF_SPLASH) == 0) {
+		window_style |= WS_SYSMENU;
+		if((create_info.flags & PLATFORM_WF_POPUP) == 0) {
+			window_style |= WS_MINIMIZEBOX;
+			window_style |= WS_MAXIMIZEBOX;
+		}
+	}
+	else {
+		window_style |= WS_POPUP; // this prevents the window title from showing on the window
+	}
+	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) {
+		window_style |= WS_VISIBLE;
+	}
+	else {
+		window_style |= WS_ICONIC;
+	}
 
 	RECT wr;
 	wr.left = create_info.x;
@@ -93,8 +109,6 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 	if(handle == NULL) {
 		return NULL;
 	}
-
-	ShowWindow(handle, SHOW_OPENWINDOW);
 
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
