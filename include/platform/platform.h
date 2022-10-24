@@ -26,11 +26,21 @@
 #define PLATFORM_COLOR_BRIGHT_WHITE   16
 
 // WF = window flag
+
+// Although the splash flag is very similar to the no border flag,
+// a window with the splash flag should be a floating window while
+// a window with the no border flag may or may not be floating
+// depending on the window manager
+// if a borderless window is what you want, dont use the splash flag since,
+// the override redirect flag for Xlib_window is set if other options
+// do not work
+
 #define PLATFORM_WF_NORMAL    0
-#define PLATFORM_WF_NO_BORDER 1
-#define PLATFORM_WF_POPUP     2
-#define PLATFORM_WF_SPLASH    4 // TODO: almost the same as WF_NO_BORDER, maybe remove this
-#define PLATFORM_WF_UNMAPPED  8 // will start unmapped
+#define PLATFORM_WF_NO_BORDER 1  // not always floating
+#define PLATFORM_WF_DIALOG    2
+#define PLATFORM_WF_SPLASH    4  // should be floating
+#define PLATFORM_WF_RESIZABLE 8  // window is resizable using cursor
+#define PLATFORM_WF_UNMAPPED  16 // will start unmapped
 
 typedef struct {
 	char* app_name;
