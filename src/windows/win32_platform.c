@@ -116,7 +116,7 @@ void platform_get_window_size(const platform_context_t* context, const platform_
 	if(width) *width = cr.right - cr.left;
 	if(width) *width = cr.bottom - cr.top;
 }
-void platform_set_window_position(const platform_context_t* context, const platform_window_t* window, const int32_t x, const int32_t y) {
+void platform_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y) {
 	RECT wr;
 	GetClientRect(window->handle, &wr);
 	uint32_t width = wr.right - wr.left;
@@ -128,7 +128,7 @@ void platform_set_window_position(const platform_context_t* context, const platf
 	LONG window_style = GetWindowLongA(window->handle, GWL_STYLE);
 	MoveWindow(window->handle, wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top, FALSE);
 }
-void platform_set_window_size(const platform_context_t* context, const platform_window_t* window, const uint32_t width, const uint32_t height) {
+void platform_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
 	RECT wr;
 	GetClientRect(window->handle, &wr);
 	wr.right = wr.left + width;
