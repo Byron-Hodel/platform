@@ -28,7 +28,7 @@ int main(void) {
 		char buffer[32] = {0};
 		sprintf(buffer, "\rIteration: %d", i++);
 		platform_terminal_print(buffer, PLATFORM_COLOR_BLUE, 0, PLATFORM_TEXT_BOLD);
-		putchar('\r');
+		putchar('\r'); // TODO: This works only when a newly printed line is longer than the Iteration counter line
 		platform_sleep_miliseconds(16);
 	}
 
