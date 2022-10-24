@@ -29,7 +29,7 @@
 #define PLATFORM_WF_NORMAL    0
 #define PLATFORM_WF_NO_BORDER 1
 #define PLATFORM_WF_POPUP     2
-#define PLATFORM_WF_SPLASH    4
+#define PLATFORM_WF_SPLASH    4 // TODO: almost the same as WF_NO_BORDER, maybe remove this
 #define PLATFORM_WF_UNMAPPED  8 // will start unmapped
 
 typedef struct {
