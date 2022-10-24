@@ -31,6 +31,9 @@ typedef struct {
 	Atom net_wm_window_type_dialog;
 	Atom net_wm_window_type_menu;
 
+	Atom net_wm_allowed_actions;
+	Atom net_wm_action_resize;
+
 	uint64_t supported_atom_count;
 	Atom* supported_atoms;
 } xlib_context_t;
