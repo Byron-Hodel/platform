@@ -101,6 +101,12 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 		}
 	}
 
+	if(create_info.flags & PLATFORM_WF_POPUP) {
+		if(context->xlib.net_wm_window_type_dialog != None) {
+			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
+			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_dialog, 1);
+		}
+	}
 	if(create_info.flags & PLATFORM_WF_POPUP && create_info.parent != NULL) {
 		XSetTransientForHint(context->xlib.dpy, handle, create_info.parent->handle);
 	}
