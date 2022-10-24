@@ -17,6 +17,7 @@ struct platform_window_t {
 	Window handle;
 	uint32_t active_flags;
 	void* user_data;
+	int8_t mapped;
 };
 
 static Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t supported_atom_count) {
@@ -31,6 +32,7 @@ int8_t xlib_init_context(xlib_context_t* context) {
 	if(context->dpy == NULL) return 0;
 	context->motif_wm_hints = XInternAtom(context->dpy, "_MOTIF_WM_HINTS", 1);
 	context->net_wm_name = XInternAtom(context->dpy, "NET_WM_NAME", 0);
+	context->net_wm_icon_name = XInternAtom(context->dpy, "_NET_WM_ICON_NAME", 0);
 	context->utf8_string = XInternAtom(context->dpy, "UTF8_STRING", 0);
 	context->net_supported = XInternAtom(context->dpy, "_NET_SUPPORTED", 0);
 	context->net_wm_window_type = XInternAtom(context->dpy, "_NET_WM_WINDOW_TYPE", 0);
@@ -90,6 +92,8 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 			XChangeProperty(context->xlib.dpy, handle, context->xlib.motif_wm_hints,
 			                context->xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
 		}
+		/* we dont want to force a floating window if the window manager is tiling
+		// TODO: only change these properties if window manager is not tiling, if possible
 		else if(context->xlib.net_wm_window_type_splash != None) {
 			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
 			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_splash, 1);
@@ -99,15 +103,16 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 			attributes.override_redirect = 1;
 			XChangeWindowAttributes(context->xlib.dpy, handle, attributes_mask, &attributes);
 		}
+		*/
 	}
 
-	if(create_info.flags & PLATFORM_WF_POPUP) {
+	if(create_info.flags & PLATFORM_WF_DIALOG) {
 		if(context->xlib.net_wm_window_type_dialog != None) {
 			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
 			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_dialog, 1);
 		}
 	}
-	if(create_info.flags & PLATFORM_WF_POPUP && create_info.parent != NULL) {
+	if(create_info.flags & PLATFORM_WF_DIALOG && create_info.parent != NULL) {
 		XSetTransientForHint(context->xlib.dpy, handle, create_info.parent->handle);
 	}
 
@@ -131,7 +136,12 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 			}
 		}
 		else {
+			attributes.override_redirect = 1;
+			XChangeWindowAttributes(context->xlib.dpy, handle, attributes_mask, &attributes);
 		}
+	}
+
+	if((create_info.flags & PLATFORM_WF_RESIZABLE) == 0) {
 		
 	}
 
@@ -139,6 +149,7 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	window->handle = handle;
 	window->active_flags = create_info.flags;
 	window->user_data = NULL;
+	window->mapped = 0;
 	xlib_set_window_name(context, window, create_info.name);
 
 	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) xlib_map_window(context, window);
@@ -167,12 +178,10 @@ void xlib_set_window_position(const platform_context_t* context, platform_window
 void xlib_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
 	XSetWindowAttributes new_attributes;
 	new_attributes.override_redirect = 1;
-	XFlush(context->xlib.dpy);
 	XChangeWindowAttributes(context->xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
 	XResizeWindow(context->xlib.dpy, window->handle, width, height);
 	new_attributes.override_redirect = 0;
 	XChangeWindowAttributes(context->xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
-	XFlush(context->xlib.dpy);
 }
 void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
 	
@@ -186,9 +195,13 @@ void xlib_set_window_name(const platform_context_t* context, platform_window_t* 
 		uint32_t len = 0;
 		while(name[len] != '\0') len++;
 		XChangeProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_name,
-						context->xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
+		                context->xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
 		XChangeProperty(context->xlib.dpy, window->handle, XA_WM_NAME,
-						XA_STRING, 8, PropModeReplace, (const uint8_t*)name, len);
+		                XA_STRING, 8, PropModeReplace, (const uint8_t*)name, len);
+		XChangeProperty(context->xlib.dpy, window->handle, XA_WM_ICON_NAME,
+		                XA_STRING, 8, PropModeReplace, (const uint8_t*)name, len);
+		XChangeProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_icon_name,
+		                context->xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
 	}
 }
 
@@ -218,7 +231,12 @@ void xlib_handle_events(const platform_context_t* context) {
 			//platform_terminal_print("Property Notify Event.\n", 0, 0, 0);
 			break;
 		case ResizeRequest:
-			xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
+			if(window->active_flags & PLATFORM_WF_RESIZABLE && window->mapped == 1) {
+				xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
+			}
+			else if(window->mapped == 0) {
+				xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
+			}
 			break;
 		case CirculateNotify:
 			platform_terminal_print("Circulate Notify Event.\n", 0, 0, 0);
@@ -232,6 +250,7 @@ void xlib_handle_events(const platform_context_t* context) {
 			platform_terminal_print("Gravity Notify Event.\n", 0, 0, 0);
 			break;
 		case MapNotify:
+			window->mapped = 1;
 			platform_terminal_print("Map Notify Event.\n", 0, 0, 0);
 			break;
 		case ReparentNotify:
