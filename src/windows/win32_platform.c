@@ -67,10 +67,11 @@ static inline void platform_allocator_free(void* addr, platform_allocation_callb
 		alloctor->free(alloctor->user_data, addr);
 	}
 	else {
-		free(addr);
+		_aligned_free(addr);
 	}
 }
 
+LRESULT __stdcall window_proc_setup(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 
 platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
@@ -89,7 +90,7 @@ platform_context_t* platform_create_context(const platform_context_settings_t* s
 	WNDCLASSEXA class;
 	class.cbSize = sizeof(WNDCLASSEXA);
 	class.style = CS_OWNDC;
-	class.lpfnWndProc = window_proc;
+	class.lpfnWndProc = window_proc_setup;
 	class.cbClsExtra = 0;
 	class.cbWndExtra = 0;
 	class.hInstance = instance;
@@ -158,6 +159,7 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) ShowWindow(handle, SW_NORMAL);
 
 	window->handle = handle;
+	window->should_close = 0;
 	return window;
 }
 void platform_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
@@ -227,9 +229,9 @@ void platform_handle_events(const platform_context_t* context) {
 // based off of code written by ChiliTomatoNoodle (youtube channel)
 LRESULT __stdcall window_proc_setup(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
 	if(msg == WM_NCCREATE) {
-		// l_param will the window pointer we specified when creating the window
-		SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LONG_PTR)l_param);
-		SetWindowLongPtrA(hwnd, GCLP_WNDPROC, (LONG_PTR)window_proc);
+		const CREATESTRUCTA* const pcreate = (CREATESTRUCTA*)l_param;
+		SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LONG_PTR)pcreate->lpCreateParams);
+		SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)window_proc);
 		return window_proc(hwnd, msg, w_param, l_param);
 	}
 	// use default window proc since user data has not been set yet
