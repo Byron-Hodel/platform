@@ -76,10 +76,9 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	uint64_t event_mask = StructureNotifyMask | SubstructureNotifyMask |
 	                      SubstructureRedirectMask | ResizeRedirectMask |
 	                      ExposureMask | PropertyChangeMask;
-	uint64_t attributes_mask = CWBackPixel | CWOverrideRedirect | CWEventMask;
+	uint64_t attributes_mask = CWBackPixel | CWEventMask;
 	XSetWindowAttributes attributes = {0};
 	attributes.background_pixel = BlackPixel(context->xlib.dpy, scr);
-	attributes.override_redirect = 0;
 	attributes.event_mask = event_mask;
 
 	Window parent_handle = create_info.parent != NULL ? create_info.parent->handle : RootWindow(context->xlib.dpy, scr);
