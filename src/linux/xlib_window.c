@@ -93,8 +93,7 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 
 	Atom protocols[1] = { context->xlib.wm_delete_window };
 
-	XChangeProperty(context->xlib.dpy, handle, context->xlib.wm_protocols,
-	                XA_ATOM, 32, PropModeReplace, (const uint8_t*)protocols, 1);
+	XSetWMProtocols(context->xlib.dpy, handle, protocols, 1);
 
 	if(create_info.flags & PLATFORM_WF_NO_BORDER && create_info.parent == NULL) {
 		if(context->xlib.motif_wm_hints != None) {
@@ -264,6 +263,11 @@ void xlib_handle_events(const platform_context_t* context) {
 
 		switch (e.type)
 		{
+		case ClientMessage:
+			if(e.xclient.data.l[0] == context->xlib.wm_delete_window) {
+				window->should_close = 1;
+			}
+			break;
 		case PropertyNotify:
 			//platform_terminal_print("Property Notify Event.\n", 0, 0, 0);
 			break;
@@ -304,7 +308,6 @@ void xlib_handle_events(const platform_context_t* context) {
 			platform_terminal_print("Map Request Event.\n", 0, 0, 0);
 			break;
 
-		case ClientMessage: break;
 		case MappingNotify: break;
 		case SelectionClear: break;
 		case SelectionNotify: break;
