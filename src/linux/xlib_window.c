@@ -18,6 +18,7 @@ struct platform_window_t {
 	uint32_t active_flags;
 	void* user_data;
 	int8_t mapped;
+	int8_t should_close;
 };
 
 static inline Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t supported_atom_count) {
@@ -30,7 +31,9 @@ static inline Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t suppor
 int8_t xlib_init_context(xlib_context_t* context) {
 	context->dpy = XOpenDisplay(NULL);
 	if(context->dpy == NULL) return 0;
-	context->motif_wm_hints = XInternAtom(context->dpy, "_MOTIF_WM_HINTS", 1);
+	context->wm_protocols = XInternAtom(context->dpy, "WN_PROTOCOLS", 0);
+	context->wm_delete_window = XInternAtom(context->dpy, "WM_DELETE_WINDOW", 0);
+	context->motif_wm_hints = XInternAtom(context->dpy, "_MOTIF_WM_HINTS", 0);
 	context->net_wm_name = XInternAtom(context->dpy, "NET_WM_NAME", 0);
 	context->net_wm_icon_name = XInternAtom(context->dpy, "_NET_WM_ICON_NAME", 0);
 	context->utf8_string = XInternAtom(context->dpy, "UTF8_STRING", 0);
@@ -87,6 +90,11 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	                              visual, attributes_mask, &attributes);
 
 	if(handle == BadWindow || handle == BadValue) return NULL;
+
+	Atom protocols[1] = { context->xlib.wm_delete_window };
+
+	XChangeProperty(context->xlib.dpy, handle, context->xlib.wm_protocols,
+	                XA_ATOM, 32, PropModeReplace, (const uint8_t*)protocols, 1);
 
 	if(create_info.flags & PLATFORM_WF_NO_BORDER && create_info.parent == NULL) {
 		if(context->xlib.motif_wm_hints != None) {
@@ -164,6 +172,7 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	window->active_flags = create_info.flags;
 	window->user_data = NULL;
 	window->mapped = 0;
+	window->should_close = 0;
 	xlib_set_window_name(context, window, create_info.name);
 
 	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) xlib_map_window(context, window);
@@ -224,6 +233,10 @@ void xlib_map_window(const platform_context_t* context, platform_window_t* windo
 }
 void xlib_unmap_window(const platform_context_t* context, platform_window_t* window) {
 	XUnmapWindow(context->xlib.dpy, window->handle);
+}
+
+int8_t xlib_window_should_close(const platform_window_t* window) {
+	return window->should_close;
 }
 
 void xlib_handle_events(const platform_context_t* context) {

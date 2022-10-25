@@ -15,11 +15,16 @@ typedef struct {
 	void (*set_window_name)(const platform_context_t* context, platform_window_t* window, const char* name);
 	void (*map_window)(const platform_context_t* context, platform_window_t* window);
 	void (*unmap_window)(const platform_context_t* context, platform_window_t* window);
+	int8_t (*window_should_close)(const platform_window_t* window);
 	void (*handle_events)(const platform_context_t* context);
 } linux_window_functions_t;
 
 typedef struct {
 	Display* dpy;
+
+	Atom wm_protocols;
+	Atom wm_delete_window;
+
 	Atom motif_wm_hints;
 	Atom net_wm_name;
 	Atom net_wm_icon_name;

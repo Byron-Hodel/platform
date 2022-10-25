@@ -71,6 +71,10 @@ void platform_unmap_window(const platform_context_t* context, platform_window_t*
 	context->window_functions.unmap_window(context, window);
 }
 
+int8_t platform_window_should_close(const platform_context_t* context, const platform_window_t* window) {
+	return context->window_functions.window_should_close(window);
+}
+
 void platform_handle_events(const platform_context_t* context) {
 	context->window_functions.handle_events(context);
 }
