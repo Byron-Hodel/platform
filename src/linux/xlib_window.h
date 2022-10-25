@@ -16,6 +16,7 @@
 	.map_window = xlib_map_window, \
 	.unmap_window = xlib_unmap_window, \
 	.window_should_close = xlib_window_should_close, \
+	.vulkan_required_extensions = xlib_vulkan_required_extensions, \
 	.handle_events = xlib_handle_events \
 }
 
@@ -32,6 +33,7 @@ void xlib_get_window_name(const platform_context_t* context, const platform_wind
 void xlib_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name);
 void xlib_map_window(const platform_context_t* context, platform_window_t* window);
 void xlib_unmap_window(const platform_context_t* context, platform_window_t* window);
+char** xlib_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count);
 int8_t xlib_window_should_close(const platform_window_t* window);
 
 void xlib_handle_events(const platform_context_t* context);

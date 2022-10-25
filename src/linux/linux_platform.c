@@ -75,6 +75,10 @@ int8_t platform_window_should_close(const platform_context_t* context, const pla
 	return context->window_functions.window_should_close(window);
 }
 
+char** platform_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count) {
+	return context->window_functions.vulkan_required_extensions(context, extension_count);
+}
+
 void platform_handle_events(const platform_context_t* context) {
 	context->window_functions.handle_events(context);
 }

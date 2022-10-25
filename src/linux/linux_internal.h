@@ -16,6 +16,7 @@ typedef struct {
 	void (*map_window)(const platform_context_t* context, platform_window_t* window);
 	void (*unmap_window)(const platform_context_t* context, platform_window_t* window);
 	int8_t (*window_should_close)(const platform_window_t* window);
+	char** (*vulkan_required_extensions)(const platform_context_t* context, uint32_t* extension_count);
 	void (*handle_events)(const platform_context_t* context);
 } linux_window_functions_t;
 

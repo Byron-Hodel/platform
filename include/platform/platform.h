@@ -84,6 +84,8 @@ void platform_unmap_window(const platform_context_t* context, platform_window_t*
 
 int8_t platform_window_should_close(const platform_context_t* context, const platform_window_t* window);
 
+char** platform_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count);
+
 void platform_handle_events(const platform_context_t* context);
 
 void platform_terminal_print(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags);

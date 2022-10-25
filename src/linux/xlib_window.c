@@ -240,6 +240,15 @@ int8_t xlib_window_should_close(const platform_window_t* window) {
 	return window->should_close;
 }
 
+char** xlib_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count) {
+	*extension_count = 2;
+	static char* extensions[] = {
+		"VK_KHR_surface",
+		"VK_KHR_xlib_surface"
+	};
+	return extensions;
+}
+
 void xlib_handle_events(const platform_context_t* context) {
 	uint32_t event_count = XPending(context->xlib.dpy);
 	for(uint32_t i = 0; i < event_count; i++) {
