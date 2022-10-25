@@ -1,3 +1,4 @@
+#define VK_USE_PLATFORM_XLIB_KHR
 #include "xlib_window.h"
 #include "X11/Xatom.h"
 #include "X11/Xutil.h"
@@ -246,6 +247,20 @@ char** xlib_vulkan_required_extensions(const platform_context_t* context, uint32
 		"VK_KHR_xlib_surface"
 	};
 	return extensions;
+}
+
+VkSurfaceKHR xlib_vulkan_create_surface(platform_context_t* context, platform_window_t* window, VkInstance instance) {
+	VkSurfaceKHR surface;
+	VkXlibSurfaceCreateInfoKHR create_info = {
+		VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
+		NULL,
+		0,
+		context->xlib.dpy,
+		window->handle
+	};
+	VkResult surface_result = vkCreateXlibSurfaceKHR(instance, &create_info, NULL, &surface);
+	if(surface_result != VK_SUCCESS) return NULL;
+	return surface;
 }
 
 void xlib_handle_events(const platform_context_t* context) {

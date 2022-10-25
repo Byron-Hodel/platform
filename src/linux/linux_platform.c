@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <vulkan/vulkan.h>
+
 void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
 	if(allocator != NULL) {
 		return allocator->alloc(allocator->user_data, size, alignment);
@@ -77,6 +79,10 @@ int8_t platform_window_should_close(const platform_context_t* context, const pla
 
 char** platform_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count) {
 	return context->window_functions.vulkan_required_extensions(context, extension_count);
+}
+
+VkSurfaceKHR platform_vulkan_create_surface(platform_context_t* context, platform_window_t* window, VkInstance instance) {
+	return context->window_functions.vulkan_create_surface(context, window, instance);
 }
 
 void platform_handle_events(const platform_context_t* context) {

@@ -3,6 +3,7 @@
 
 #include "platform/platform.h"
 #include <X11/Xlib.h>
+#include <vulkan/vulkan.h>
 
 typedef struct {
 	platform_window_t* (*create_window)(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator);
@@ -17,6 +18,7 @@ typedef struct {
 	void (*unmap_window)(const platform_context_t* context, platform_window_t* window);
 	int8_t (*window_should_close)(const platform_window_t* window);
 	char** (*vulkan_required_extensions)(const platform_context_t* context, uint32_t* extension_count);
+	VkSurfaceKHR (*vulkan_create_surface)(platform_context_t* context, platform_window_t* window, VkInstance instance);
 	void (*handle_events)(const platform_context_t* context);
 } linux_window_functions_t;
 

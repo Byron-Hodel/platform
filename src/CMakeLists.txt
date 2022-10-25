@@ -27,3 +27,7 @@ endif()
 
 target_include_directories(platform PUBLIC "${PROJECT_SOURCE_DIR}/include/")
 target_include_directories(platform PRIVATE "${PROJECT_SOURCE_DIR}/src/")
+
+find_package(Vulkan REQUIRED)
+target_link_libraries(platform Vulkan::Vulkan)
+target_include_directories(platform PRIVATE Vulkan::Vulkan)

@@ -25,6 +25,10 @@
 #define PLATFORM_COLOR_BRIGHT_CYAN    15
 #define PLATFORM_COLOR_BRIGHT_WHITE   16
 
+#ifdef PLATFORM_VULKAN
+#include <vulkan/vulkan.h>
+#endif // PLATFORM_VULKAN
+
 // WF = window flag
 
 // Although the splash flag is very similar to the no border flag,
@@ -84,7 +88,10 @@ void platform_unmap_window(const platform_context_t* context, platform_window_t*
 
 int8_t platform_window_should_close(const platform_context_t* context, const platform_window_t* window);
 
+#ifdef PLATFORM_VULKAN
 char** platform_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count);
+VkSurfaceKHR platform_vulkan_create_surface(platform_context_t* context, platform_window_t* window, VkInstance instance);
+#endif // PLATFORM_VULKAN
 
 void platform_handle_events(const platform_context_t* context);
 
