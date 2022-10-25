@@ -1,6 +1,41 @@
 #include "platform/platform.h"
 
 #define WIN32_LEAN_AND_MEAN
+#define NOGDICAPMASKS
+#define NOSYSMETRICS
+#define NOMENUS
+#define NOICONS
+#define NOSYSCOMMANDS
+#define NORASTEROPS
+#define OEMRESOURCE
+#define NOATOM
+#define NOCLIPBOARD
+#define NOATOM
+#define NOCOLOR
+#define NOCTLMGR
+#define NODRAWTEXT
+#define NOKERNEL
+#define NONLS
+#define NOMEMMGR
+#define NOMETAFILE
+#define NOMINMAX
+#define NOSCROLL
+#define NOSERVICE
+#define NOSOUND
+#define NOTEXTMETRIC
+#define NOWH
+#define NOCOMM
+#define NOKANJI
+#define NOHELP
+#define NOPROFILER
+#define NODEFERWINDOWPOS
+#define NOMCX
+#define NORPC
+#define NOPROXYSTUB
+#define NOIMAGE
+#define NOTAPE
+
+#define STRICT
 
 #include <Windows.h>
 #include <timeapi.h>
@@ -15,6 +50,7 @@ struct platform_context_t {
 
 struct platform_window_t {
 	HWND handle;
+	int8_t should_close;
 };
 
 static inline void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
@@ -35,6 +71,8 @@ static inline void platform_allocator_free(void* addr, platform_allocation_callb
 	}
 }
 
+LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+
 platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
 	HINSTANCE instance = GetModuleHandleA(NULL);
 
@@ -51,7 +89,7 @@ platform_context_t* platform_create_context(const platform_context_settings_t* s
 	WNDCLASSEXA class;
 	class.cbSize = sizeof(WNDCLASSEXA);
 	class.style = CS_OWNDC;
-	class.lpfnWndProc = DefWindowProc;
+	class.lpfnWndProc = window_proc;
 	class.cbClsExtra = 0;
 	class.cbWndExtra = 0;
 	class.hInstance = instance;
@@ -80,7 +118,7 @@ void platform_destroy_context(platform_context_t* context, platform_allocation_c
 platform_window_t* platform_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
 	DWORD window_style = WS_BORDER;
 	if(create_info.flags == PLATFORM_WF_NORMAL) {
-		window_style = WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_BORDER;
+		window_style = WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_BORDER | WS_SIZEBOX;
 	}
 	else {
 		if((create_info.flags & PLATFORM_WF_NO_BORDER) == 0 && (create_info.flags & PLATFORM_WF_SPLASH) == 0) {
@@ -108,16 +146,17 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 
 	HWND parent = create_info.parent != NULL ? create_info.parent->handle : NULL;
 
+	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	HWND handle = CreateWindowA(context->class_name, create_info.name, window_style,
 	                            wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top,
-	                            parent, NULL, context->instance, NULL);
+	                            parent, NULL, context->instance, (LPVOID)window);
 	if(handle == NULL) {
+		platform_allocator_free(window, allocator);
 		return NULL;
 	}
 
 	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) ShowWindow(handle, SW_NORMAL);
 
-	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
 	return window;
 }
@@ -164,6 +203,18 @@ void platform_set_window_name(const platform_context_t* context, platform_window
 	SetWindowTextA(window->handle, name);
 }
 
+void platform_map_window(const platform_context_t* context, platform_window_t* window) {
+	ShowWindow(window->handle, SW_NORMAL);
+}
+
+void platform_unmap_window(const platform_context_t* context, platform_window_t* window) {
+	ShowWindow(window->handle, SW_HIDE);
+}
+
+int8_t platform_window_should_close(const platform_context_t* context, const platform_window_t* window) {
+	return window->should_close;
+}
+
 void platform_handle_events(const platform_context_t* context) {
 	// while context is not needed here, it is needed by the linux platform
 	MSG msg;
@@ -171,6 +222,37 @@ void platform_handle_events(const platform_context_t* context) {
 		TranslateMessage(&msg);
 		DispatchMessageA(&msg);
 	}
+}
+
+// based off of code written by ChiliTomatoNoodle (youtube channel)
+LRESULT __stdcall window_proc_setup(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+	if(msg == WM_NCCREATE) {
+		// l_param will the window pointer we specified when creating the window
+		SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LONG_PTR)l_param);
+		SetWindowLongPtrA(hwnd, GCLP_WNDPROC, (LONG_PTR)window_proc);
+		return window_proc(hwnd, msg, w_param, l_param);
+	}
+	// use default window proc since user data has not been set yet
+	return DefWindowProcA(hwnd, msg, w_param, l_param);
+}
+
+LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param) {
+	platform_window_t* window = (platform_window_t*)GetWindowLongPtrA(hwnd, GWLP_USERDATA);
+
+	switch(msg)
+	{
+	case WM_CLOSE: // window wants to close
+		window->should_close = 1;
+		return 0;
+	case WM_DESTROY: break;
+	case WM_SIZE:
+		platform_terminal_print("Size Event.\n", 0, 0, 0);
+		break;
+	case WM_KEYDOWN: break;
+	case WM_KEYUP: break;
+	}
+
+	return DefWindowProcA(hwnd, msg, w_param, l_param);
 }
 
 static const WORD forground_color_table[] = {
