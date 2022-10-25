@@ -1,6 +1,6 @@
 
 add_library(platform STATIC
-	"${CMAKE_SOURCE_DIR}/include/platform/platform.h"
+	"${PROJECT_SOURCE_DIR}/include/platform/platform.h"
 )
 
 if(WIN32)
@@ -25,5 +25,5 @@ elseif(APPLE)
 	# Not Supported Yet
 endif()
 
-target_include_directories(platform PUBLIC "${CMAKE_SOURCE_DIR}/include/")
-target_include_directories(platform PRIVATE "${CMAKE_SOURCE_DIR}/src/")
+target_include_directories(platform PUBLIC "${PROJECT_SOURCE_DIR}/include/")
+target_include_directories(platform PRIVATE "${PROJECT_SOURCE_DIR}/src/")
