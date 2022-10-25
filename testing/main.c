@@ -17,13 +17,13 @@ int main(void) {
 	create_info.width = 500;
 	create_info.height = 300;
 	create_info.parent = NULL;
-	create_info.flags = PLATFORM_WF_SPLASH;
+	create_info.flags = PLATFORM_WF_NORMAL;
 
 	platform_window_t* window = platform_create_window(platform_context, create_info, NULL);
 	if(window == NULL) return platform_destroy_context(platform_context, NULL), 0;
 
 	uint32_t i = 0;
-	while(1) {
+	while(!platform_window_should_close(platform_context, window)) {
 		platform_handle_events(platform_context);
 		char buffer[32] = {0};
 		sprintf(buffer, "\rIteration: %d", i++);
