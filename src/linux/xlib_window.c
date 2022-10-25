@@ -180,6 +180,7 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	return window;
 }
 void xlib_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
+	XDeleteContext(context->xlib.dpy, window->handle, 0);
 	XDestroyWindow(context->xlib.dpy, window->handle);
 	platform_allocator_free(window, allocator);
 }
