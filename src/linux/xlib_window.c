@@ -152,20 +152,16 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 		}
 	}
 
-	if((create_info.flags & PLATFORM_WF_RESIZABLE) == 0) {
-		XSizeHints size_hints;
-		size_hints.min_width = create_info.width;
-		size_hints.max_width = create_info.width;
-		size_hints.min_height = create_info.height;
-		size_hints.max_height = create_info.height;
-		size_hints.flags = PMinSize | PMaxSize;
-		XSetWMNormalHints(context->xlib.dpy, handle, &size_hints);
-		if(context->xlib.net_wm_allowed_actions != None) {
-			Atom allowed_actions[1] = { context->xlib.net_wm_action_resize };
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_allowed_actions,
-			                XA_ATOM, 32, PropModeAppend, (const uint8_t*)allowed_actions, 1);
-		}
+	XSizeHints size_hints;
+	size_hints.flags = PPosition;
+	size_hints.x = create_info.x;
+	size_hints.y = create_info.y;
+	if(create_info.flags & PLATFORM_WF_RESIZABLE && context->xlib.net_wm_allowed_actions != None) {
+		Atom allowed_actions[1] = { context->xlib.net_wm_action_resize };
+		XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_allowed_actions,
+						XA_ATOM, 32, PropModeAppend, (const uint8_t*)allowed_actions, 1);
 	}
+	XSetWMNormalHints(context->xlib.dpy, handle, &size_hints);
 
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
@@ -301,7 +297,21 @@ void xlib_handle_events(const platform_context_t* context) {
 			platform_terminal_print("Gravity Notify Event.\n", 0, 0, 0);
 			break;
 		case MapNotify:
-			window->mapped = 1;
+			// changing this property at window creation caused the window to
+			// be floating in bspwm, placing here prevents that while making the
+			// window not resizable, at least on ubuntu
+			if((window->active_flags & PLATFORM_WF_RESIZABLE) == 0) {
+				uint32_t w, h;
+				xlib_get_window_size(context, window, &w, &h);
+				XSizeHints size_hints;
+				window->mapped = 1;
+				size_hints.flags = PPosition;
+				size_hints.min_width = size_hints.max_width = w;
+				size_hints.min_height = size_hints.max_height = h;
+				size_hints.flags |= PMinSize | PMaxSize;
+				XSetWMNormalHints(context->xlib.dpy, window->handle, &size_hints);
+			}
+
 			platform_terminal_print("Map Notify Event.\n", 0, 0, 0);
 			break;
 		case ReparentNotify:
