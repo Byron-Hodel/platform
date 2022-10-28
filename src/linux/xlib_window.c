@@ -179,6 +179,7 @@ void xlib_destroy_window(platform_context_t* context, platform_window_t* window,
 	XDeleteContext(context->xlib.dpy, window->handle, 0);
 	XDestroyWindow(context->xlib.dpy, window->handle);
 	platform_allocator_free(window, allocator);
+	XFlush(context->xlib.dpy);
 }
 void xlib_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y) {
 	XWindowAttributes attributes;
