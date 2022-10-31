@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#define _GNU_SOURCE
+#include <sys/mman.h>
 
 #include <vulkan/vulkan.h>
 
@@ -165,6 +167,17 @@ void platform_sleep_miliseconds(const uint32_t miliseconds) {
 		sleep_time.tv_nsec = (miliseconds - sleep_time.tv_sec * 1000) * 1000000;
 		nanosleep(&sleep_time, &remaining);
 	#endif
+}
+
+void* platform_map_memory(void* addr_hint, uint64_t size) {
+	void* mem = mmap(addr_hint, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+	if(mem == MAP_FAILED) return NULL;
+	return mem;
+}
+
+int8_t platform_unmap_memory(void* addr, uint64_t size) {
+	if(munmap(addr, size) == -1) return 0;
+	return 1;
 }
 
 #endif // LINUX_PLATFORM_H

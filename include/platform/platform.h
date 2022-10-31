@@ -98,6 +98,8 @@ void platform_handle_events(const platform_context_t* context);
 void platform_terminal_print(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags);
 void platform_terminal_print_error(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags);
 
+void* platform_map_memory(void* addr_hint, uint64_t size);
+int8_t platform_unmap_memory(void* addr, uint64_t size);
 
 uint64_t platform_get_timestamp(void);
 void platform_sleep_miliseconds(const uint32_t miliseconds);
