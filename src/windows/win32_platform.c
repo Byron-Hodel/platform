@@ -38,17 +38,19 @@
 #define STRICT
 
 #include <Windows.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan/vulkan.h>
 #include <timeapi.h>
 #include <malloc.h>
 
 #define DEFAULT_CLASS_NAME "WIN32_PLATFORM_CLASS"
 
-struct windows_context_t {
+typedef struct win32_context_t {
 	HINSTANCE instance;
 	char* class_name;
-};
+} win32_context_t;
 
-static windows_context_t context;
+static win32_context_t context;
 
 struct platform_window_t {
 	HWND handle;
@@ -76,13 +78,13 @@ static inline void platform_allocator_free(void* addr, platform_allocation_callb
 LRESULT __stdcall window_proc_setup(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 
-int8_t platform_init(const platform_context_settings_t* settings) {
+int8_t platform_init(const platform_settings_t* settings) {
 	HINSTANCE instance = GetModuleHandleA(NULL);
 
 	// check if gui applications can be created
 	// https://learn.microsoft.com/en-us/windows/win32/winstation/window-stations
 	HWINSTA station = GetProcessWindowStation();
-	if(station == NULL) return NULL;
+	if(station == NULL) return 0;
 	const char valid_station_name[8] = "WinSta0";
 	char station_name[32];
 	DWORD len_needed;
@@ -108,12 +110,11 @@ int8_t platform_init(const platform_context_settings_t* settings) {
 
 	context.instance = instance;
 	context.class_name = DEFAULT_CLASS_NAME;
-	1
+	return 1;
 }
 
-void platform_destroy_context( platform_allocation_callbacks_t* allocator) {
-	UnregisterClassA(context->class_name, context->instance);
-	platform_allocator_free(context, allocator);
+void platform_shutdown(void) {
+	UnregisterClassA(context.class_name, context.instance);
 }
 
 
@@ -149,9 +150,9 @@ platform_window_t* platform_create_window(const platform_window_create_info_t cr
 	HWND parent = create_info.parent != NULL ? create_info.parent->handle : NULL;
 
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
-	HWND handle = CreateWindowA(context->class_name, create_info.name, window_style,
+	HWND handle = CreateWindowA(context.class_name, create_info.name, window_style,
 	                            wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top,
-	                            parent, NULL, context->instance, (LPVOID)window);
+	                            parent, NULL, context.instance, (LPVOID)window);
 	if(handle == NULL) {
 		platform_allocator_free(window, allocator);
 		return NULL;
@@ -218,7 +219,25 @@ int8_t platform_window_should_close(const platform_window_t* window) {
 	return window->should_close;
 }
 
-void platform_handle_events(const platform_context_t* context) {
+char** platform_vulkan_required_extensions(uint32_t* extension_count) {
+	*extension_count = 2;
+	static char* extensions[] = {
+		"VK_KHR_surface",
+		"VK_KHR_win32_surface"
+	};
+	return extensions;
+}
+VkSurfaceKHR platform_vulkan_create_surface(platform_window_t* window, VkInstance instance) {
+	VkSurfaceKHR surface;
+	VkWin32SurfaceCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
+	create_info.hinstance = context.instance;
+	create_info.hwnd = window->handle;
+	VkResult surface_result = vkCreateWin32SurfaceKHR(instance, &create_info, NULL, &surface);
+	if(surface_result != VK_SUCCESS) return NULL;
+	return surface;
+}
+
+void platform_handle_events(void) {
 	// while context is not needed here, it is needed by the linux platform
 	MSG msg;
 	while(PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -317,6 +336,14 @@ void platform_terminal_print(const char* msg, const uint8_t forground, const uin
 void platform_terminal_print_error(const char* msg, const uint8_t forground, const uint8_t background, const uint8_t flags) {
 	HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
 	_terminal_print(msg, forground, background, flags, stderr_handle);
+}
+
+
+void* platform_map_memory(void* addr_hint, uint64_t size) {
+	return VirtualAlloc(addr_hint, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+}
+int8_t platform_unmap_memory(void* addr, uint64_t size) {
+	return VirtualFree(addr, size, MEM_RELEASE) != 0;
 }
 
 
