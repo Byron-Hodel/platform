@@ -43,10 +43,12 @@
 
 #define DEFAULT_CLASS_NAME "WIN32_PLATFORM_CLASS"
 
-struct platform_context_t {
+struct windows_context_t {
 	HINSTANCE instance;
 	char* class_name;
 };
+
+static windows_context_t context;
 
 struct platform_window_t {
 	HWND handle;
@@ -74,7 +76,7 @@ static inline void platform_allocator_free(void* addr, platform_allocation_callb
 LRESULT __stdcall window_proc_setup(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 
-platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
+int8_t platform_init(const platform_context_settings_t* settings) {
 	HINSTANCE instance = GetModuleHandleA(NULL);
 
 	// check if gui applications can be created
@@ -85,7 +87,7 @@ platform_context_t* platform_create_context(const platform_context_settings_t* s
 	char station_name[32];
 	DWORD len_needed;
 	GetUserObjectInformationA(station, UOI_NAME, (void*)station_name, 32, &len_needed);
-	for(int i = 0; i < 8; i++) if(station_name[i] != valid_station_name[i]) return NULL;
+	for(int i = 0; i < 8; i++) if(station_name[i] != valid_station_name[i]) return 0;
 
 	WNDCLASSEXA class;
 	class.cbSize = sizeof(WNDCLASSEXA);
@@ -102,21 +104,20 @@ platform_context_t* platform_create_context(const platform_context_settings_t* s
 	class.hIconSm = NULL;
 
 	ATOM class_result = RegisterClassExA(&class);
-	if(class_result == 0) return NULL;
+	if(class_result == 0) return 0;
 
-	platform_context_t* context = platform_allocator_alloc(sizeof(platform_context_t), 4, allocator);
-	context->instance = instance;
-	context->class_name = DEFAULT_CLASS_NAME;
-	return context;
+	context.instance = instance;
+	context.class_name = DEFAULT_CLASS_NAME;
+	1
 }
 
-void platform_destroy_context(platform_context_t* context, platform_allocation_callbacks_t* allocator) {
+void platform_destroy_context( platform_allocation_callbacks_t* allocator) {
 	UnregisterClassA(context->class_name, context->instance);
 	platform_allocator_free(context, allocator);
 }
 
 
-platform_window_t* platform_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
+platform_window_t* platform_create_window(const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
 	DWORD window_style = WS_BORDER;
 	if(create_info.flags == PLATFORM_WF_NORMAL) {
 		window_style = WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_BORDER | WS_SIZEBOX;
@@ -162,23 +163,23 @@ platform_window_t* platform_create_window(platform_context_t* context, const pla
 	window->should_close = 0;
 	return window;
 }
-void platform_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
+void platform_destroy_window( platform_window_t* window, platform_allocation_callbacks_t* allocator) {
 	DestroyWindow(window->handle);
 	platform_allocator_free(window, allocator);
 }
-void platform_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y) {
+void platform_get_window_position(const platform_window_t* window, int32_t* x, int32_t* y) {
 	RECT client_rect;
 	GetClientRect(window->handle, &client_rect);
 	if(x) *x = client_rect.left;
 	if(y) *y = client_rect.top;
 }
-void platform_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height) {
+void platform_get_window_size(const platform_window_t* window, uint32_t* width, uint32_t* height) {
 	RECT cr;
 	GetClientRect(window->handle, &cr);
 	if(width) *width = cr.right - cr.left;
 	if(width) *width = cr.bottom - cr.top;
 }
-void platform_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y) {
+void platform_set_window_position(platform_window_t* window, const int32_t x, const int32_t y) {
 	RECT wr;
 	GetClientRect(window->handle, &wr);
 	uint32_t width = wr.right - wr.left;
@@ -190,7 +191,7 @@ void platform_set_window_position(const platform_context_t* context, platform_wi
 	LONG window_style = GetWindowLongA(window->handle, GWL_STYLE);
 	MoveWindow(window->handle, wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top, FALSE);
 }
-void platform_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
+void platform_set_window_size(platform_window_t* window, const uint32_t width, const uint32_t height) {
 	RECT wr;
 	GetClientRect(window->handle, &wr);
 	wr.right = wr.left + width;
@@ -198,22 +199,22 @@ void platform_set_window_size(const platform_context_t* context, platform_window
 	LONG window_style = GetWindowLongA(window->handle, GWL_STYLE);
 	MoveWindow(window->handle, wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top, FALSE);
 }
-void platform_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
+void platform_get_window_name(const platform_window_t* window, char* name, uint32_t max_len) {
 	GetWindowTextA(window->handle, name, max_len);
 }
-void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
+void platform_set_window_name(platform_window_t* window, const char* name) {
 	SetWindowTextA(window->handle, name);
 }
 
-void platform_map_window(const platform_context_t* context, platform_window_t* window) {
+void platform_map_window(platform_window_t* window) {
 	ShowWindow(window->handle, SW_NORMAL);
 }
 
-void platform_unmap_window(const platform_context_t* context, platform_window_t* window) {
+void platform_unmap_window(platform_window_t* window) {
 	ShowWindow(window->handle, SW_HIDE);
 }
 
-int8_t platform_window_should_close(const platform_context_t* context, const platform_window_t* window) {
+int8_t platform_window_should_close(const platform_window_t* window) {
 	return window->should_close;
 }
 

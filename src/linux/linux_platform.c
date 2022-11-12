@@ -12,6 +12,8 @@
 
 #include <vulkan/vulkan.h>
 
+linux_context_t context;
+
 void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
 	if(allocator != NULL) {
 		return allocator->alloc(allocator->user_data, size, alignment);
@@ -30,65 +32,62 @@ void platform_allocator_free(void* addr, platform_allocation_callbacks_t* alloct
 	}
 }
 
-platform_context_t* platform_create_context(const platform_context_settings_t* settings, platform_allocation_callbacks_t* allocator) {
-	xlib_context_t xlib_contex;
-	if(xlib_init_context(&xlib_contex) == 0) return NULL;
-	platform_context_t* context = platform_allocator_alloc(sizeof(platform_context_t), 4, allocator);
-	context->xlib = xlib_contex;
-	context->window_functions = XLIB_WINDOW_FUNCTIONS;
-	return context;
+int8_t platform_init(const platform_settings_t* settings) {
+	if(xlib_init_context(&context.xlib) == 0) return 0;
+	context.window_functions = XLIB_WINDOW_FUNCTIONS;
+	return 1;
 }
-void platform_destroy_context(platform_context_t* context, platform_allocation_callbacks_t* allocator) {
-	platform_allocator_free(context, allocator);
+void platform_shutdown(void) {
+	xlib_cleanup_context(&context.xlib);
 }
 
 
-platform_window_t* platform_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
-	return context->window_functions.create_window(context, create_info, allocator);
+platform_window_t* platform_create_window(const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
+	return context.window_functions.create_window(create_info, allocator);
 }
-void platform_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
-	context->window_functions.destroy_window(context, window, allocator);
+void platform_destroy_window(platform_window_t* window, platform_allocation_callbacks_t* allocator) {
+	context.window_functions.destroy_window(window, allocator);
 }
-void platform_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y) {
-	context->window_functions.get_window_position(context, window, x, y);
+void platform_get_window_position(const platform_window_t* window, int32_t* x, int32_t* y) {
+	context.window_functions.get_window_position(window, x, y);
 }
-void platform_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height) {
-	context->window_functions.get_window_size(context, window, width, height);
+void platform_get_window_size(const platform_window_t* window, uint32_t* width, uint32_t* height) {
+	context.window_functions.get_window_size(window, width, height);
 }
-void platform_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y) {
-	context->window_functions.set_window_position(context, window, x, y);
+void platform_set_window_position(platform_window_t* window, const int32_t x, const int32_t y) {
+	context.window_functions.set_window_position(window, x, y);
 }
-void platform_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
-	context->window_functions.set_window_size(context, window, width, height);
+void platform_set_window_size(platform_window_t* window, const uint32_t width, const uint32_t height) {
+	context.window_functions.set_window_size(window, width, height);
 }
-void get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
-	return context->window_functions.get_window_name(context, window, name, max_len);
+void get_window_name(const platform_window_t* window, char* name, uint32_t max_len) {
+	return context.window_functions.get_window_name(window, name, max_len);
 }
-void platform_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
-	context->window_functions.set_window_name(context, window, name);
-}
-
-void platform_map_window(const platform_context_t* context, platform_window_t* window) {
-	context->window_functions.map_window(context, window);
-}
-void platform_unmap_window(const platform_context_t* context, platform_window_t* window) {
-	context->window_functions.unmap_window(context, window);
+void platform_set_window_name(platform_window_t* window, const char* name) {
+	context.window_functions.set_window_name(window, name);
 }
 
-int8_t platform_window_should_close(const platform_context_t* context, const platform_window_t* window) {
-	return context->window_functions.window_should_close(window);
+void platform_map_window(platform_window_t* window) {
+	context.window_functions.map_window(window);
+}
+void platform_unmap_window(platform_window_t* window) {
+	context.window_functions.unmap_window(window);
 }
 
-char** platform_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count) {
-	return context->window_functions.vulkan_required_extensions(context, extension_count);
+int8_t platform_window_should_close(const platform_window_t* window) {
+	return context.window_functions.window_should_close(window);
 }
 
-VkSurfaceKHR platform_vulkan_create_surface(platform_context_t* context, platform_window_t* window, VkInstance instance) {
-	return context->window_functions.vulkan_create_surface(context, window, instance);
+char** platform_vulkan_required_extensions(uint32_t* extension_count) {
+	return context.window_functions.vulkan_required_extensions(extension_count);
 }
 
-void platform_handle_events(const platform_context_t* context) {
-	context->window_functions.handle_events(context);
+VkSurfaceKHR platform_vulkan_create_surface(platform_window_t* window, VkInstance instance) {
+	return context.window_functions.vulkan_create_surface(window, instance);
+}
+
+void platform_handle_events(void) {
+	context.window_functions.handle_events();
 }
 
 // NOTE: add 10 to get background color

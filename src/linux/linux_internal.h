@@ -6,20 +6,20 @@
 #include <vulkan/vulkan.h>
 
 typedef struct {
-	platform_window_t* (*create_window)(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator);
-	void (*destroy_window)(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator);
-	void (*get_window_position)(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y);
-	void (*get_window_size)(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height);
-	void (*set_window_position)(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y);
-	void (*set_window_size)(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height);
-	void (*get_window_name)(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len);
-	void (*set_window_name)(const platform_context_t* context, platform_window_t* window, const char* name);
-	void (*map_window)(const platform_context_t* context, platform_window_t* window);
-	void (*unmap_window)(const platform_context_t* context, platform_window_t* window);
+	platform_window_t* (*create_window)(const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator);
+	void (*destroy_window)(platform_window_t* window, platform_allocation_callbacks_t* allocator);
+	void (*get_window_position)(const platform_window_t* window, int32_t* x, int32_t* y);
+	void (*get_window_size)(const platform_window_t* window, uint32_t* width, uint32_t* height);
+	void (*set_window_position)(platform_window_t* window, const int32_t x, const int32_t y);
+	void (*set_window_size)(platform_window_t* window, const uint32_t width, const uint32_t height);
+	void (*get_window_name)(const platform_window_t* window, char* name, uint32_t max_len);
+	void (*set_window_name)(platform_window_t* window, const char* name);
+	void (*map_window)(platform_window_t* window);
+	void (*unmap_window)(platform_window_t* window);
 	int8_t (*window_should_close)(const platform_window_t* window);
-	char** (*vulkan_required_extensions)(const platform_context_t* context, uint32_t* extension_count);
-	VkSurfaceKHR (*vulkan_create_surface)(platform_context_t* context, platform_window_t* window, VkInstance instance);
-	void (*handle_events)(const platform_context_t* context);
+	char** (*vulkan_required_extensions)(uint32_t* extension_count);
+	VkSurfaceKHR (*vulkan_create_surface)(platform_window_t* window, VkInstance instance);
+	void (*handle_events)(void);
 } linux_window_functions_t;
 
 typedef struct {
@@ -46,12 +46,13 @@ typedef struct {
 	Atom* supported_atoms;
 } xlib_context_t;
 
-struct platform_context_t {
+typedef struct linux_context_t {
 	union {
 		xlib_context_t xlib;
 	};
 	linux_window_functions_t window_functions;
-};
+} linux_context_t;
+extern linux_context_t context;
 
 void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator);
 void platform_allocator_free(void* addr, platform_allocation_callbacks_t* alloctor);

@@ -24,20 +24,20 @@
 int8_t xlib_init_context(xlib_context_t* context);
 void xlib_cleanup_context(xlib_context_t* context);
 
-platform_window_t* xlib_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator);
-void xlib_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator);
-void xlib_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y);
-void xlib_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height);
-void xlib_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y);
-void xlib_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height);
-void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len);
-void xlib_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name);
-void xlib_map_window(const platform_context_t* context, platform_window_t* window);
-void xlib_unmap_window(const platform_context_t* context, platform_window_t* window);
+platform_window_t* xlib_create_window(const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator);
+void xlib_destroy_window(platform_window_t* window, platform_allocation_callbacks_t* allocator);
+void xlib_get_window_position(const platform_window_t* window, int32_t* x, int32_t* y);
+void xlib_get_window_size(const platform_window_t* window, uint32_t* width, uint32_t* height);
+void xlib_set_window_position(platform_window_t* window, const int32_t x, const int32_t y);
+void xlib_set_window_size(platform_window_t* window, const uint32_t width, const uint32_t height);
+void xlib_get_window_name(const platform_window_t* window, char* name, uint32_t max_len);
+void xlib_set_window_name(platform_window_t* window, const char* name);
+void xlib_map_window(platform_window_t* window);
+void xlib_unmap_window(platform_window_t* window);
 int8_t xlib_window_should_close(const platform_window_t* window);
-char** xlib_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count);
-VkSurfaceKHR xlib_vulkan_create_surface(platform_context_t* context, platform_window_t* window, VkInstance instance);
+char** xlib_vulkan_required_extensions(uint32_t* extension_count);
+VkSurfaceKHR xlib_vulkan_create_surface(platform_window_t* window, VkInstance instance);
 
-void xlib_handle_events(const platform_context_t* context);
+void xlib_handle_events(void);
 
 #endif // XLIB_WINDOW_H

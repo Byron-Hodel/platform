@@ -72,83 +72,83 @@ void xlib_cleanup_context(xlib_context_t* context) {
 	context->dpy = NULL;
 }
 
-platform_window_t* xlib_create_window(platform_context_t* context, const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
-	int scr = DefaultScreen(context->xlib.dpy);
-	int depth = DefaultDepth(context->xlib.dpy, scr);
-	Visual* visual = DefaultVisual(context->xlib.dpy, scr);
+platform_window_t* xlib_create_window(const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
+	int scr = DefaultScreen(context.xlib.dpy);
+	int depth = DefaultDepth(context.xlib.dpy, scr);
+	Visual* visual = DefaultVisual(context.xlib.dpy, scr);
 
 	uint64_t event_mask = StructureNotifyMask | SubstructureNotifyMask |
 	                      SubstructureRedirectMask | ResizeRedirectMask |
 	                      ExposureMask | PropertyChangeMask;
 	uint64_t attributes_mask = CWBackPixel | CWEventMask;
 	XSetWindowAttributes attributes = {0};
-	attributes.background_pixel = BlackPixel(context->xlib.dpy, scr);
+	attributes.background_pixel = BlackPixel(context.xlib.dpy, scr);
 	attributes.event_mask = event_mask;
 
-	Window parent_handle = create_info.parent != NULL ? create_info.parent->handle : RootWindow(context->xlib.dpy, scr);
-	Window handle = XCreateWindow(context->xlib.dpy, parent_handle, create_info.x, create_info.y,
+	Window parent_handle = create_info.parent != NULL ? create_info.parent->handle : RootWindow(context.xlib.dpy, scr);
+	Window handle = XCreateWindow(context.xlib.dpy, parent_handle, create_info.x, create_info.y,
 	                              create_info.width, create_info.height, 0, depth, InputOutput,
 	                              visual, attributes_mask, &attributes);
 
 	if(handle == BadWindow || handle == BadValue) return NULL;
 
-	Atom protocols[1] = { context->xlib.wm_delete_window };
+	Atom protocols[1] = { context.xlib.wm_delete_window };
 
-	XSetWMProtocols(context->xlib.dpy, handle, protocols, 1);
+	XSetWMProtocols(context.xlib.dpy, handle, protocols, 1);
 
 	if(create_info.flags & PLATFORM_WF_NO_BORDER && create_info.parent == NULL) {
-		if(context->xlib.motif_wm_hints != None) {
+		if(context.xlib.motif_wm_hints != None) {
 			motif_hints_t h = {0};
 			h.flags = 2;
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.motif_wm_hints,
-			                context->xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
+			XChangeProperty(context.xlib.dpy, handle, context.xlib.motif_wm_hints,
+			                context.xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
 		}
 		/* we dont want to force a floating window if the window manager is tiling
 		// TODO: only change these properties if window manager is not tiling, if possible
-		else if(context->xlib.net_wm_window_type_splash != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_splash, 1);
+		else if(context.xlib.net_wm_window_type_splash != None) {
+			XChangeProperty(context.xlib.dpy, handle, context.xlib.net_wm_window_type, XA_ATOM, 32,
+			                PropModeReplace, (const uint8_t*)&context.xlib.net_wm_window_type_splash, 1);
 		}
 		else {
 			// last resort
 			attributes.override_redirect = 1;
-			XChangeWindowAttributes(context->xlib.dpy, handle, attributes_mask, &attributes);
+			XChangeWindowAttributes(context.xlib.dpy, handle, attributes_mask, &attributes);
 		}
 		*/
 	}
 
 	if(create_info.flags & PLATFORM_WF_DIALOG) {
-		if(context->xlib.net_wm_window_type_dialog != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_dialog, 1);
+		if(context.xlib.net_wm_window_type_dialog != None) {
+			XChangeProperty(context.xlib.dpy, handle, context.xlib.net_wm_window_type, XA_ATOM, 32,
+			                PropModeReplace, (const uint8_t*)&context.xlib.net_wm_window_type_dialog, 1);
 		}
 	}
 	if(create_info.flags & PLATFORM_WF_DIALOG && create_info.parent != NULL) {
-		XSetTransientForHint(context->xlib.dpy, handle, create_info.parent->handle);
+		XSetTransientForHint(context.xlib.dpy, handle, create_info.parent->handle);
 	}
 
 	if((create_info.flags & PLATFORM_WF_SPLASH) != 0) {
-		if(context->xlib.net_wm_window_type_splash != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-							PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_splash, 1);
+		if(context.xlib.net_wm_window_type_splash != None) {
+			XChangeProperty(context.xlib.dpy, handle, context.xlib.net_wm_window_type, XA_ATOM, 32,
+							PropModeReplace, (const uint8_t*)&context.xlib.net_wm_window_type_splash, 1);
 		}
-		else if(context->xlib.net_wm_window_type_menu != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_menu, 1);
+		else if(context.xlib.net_wm_window_type_menu != None) {
+			XChangeProperty(context.xlib.dpy, handle, context.xlib.net_wm_window_type, XA_ATOM, 32,
+			                PropModeReplace, (const uint8_t*)&context.xlib.net_wm_window_type_menu, 1);
 		}
-		else if(context->xlib.net_wm_window_type_dialog != None) {
-			XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_window_type, XA_ATOM, 32,
-			                PropModeReplace, (const uint8_t*)&context->xlib.net_wm_window_type_dialog, 1);
+		else if(context.xlib.net_wm_window_type_dialog != None) {
+			XChangeProperty(context.xlib.dpy, handle, context.xlib.net_wm_window_type, XA_ATOM, 32,
+			                PropModeReplace, (const uint8_t*)&context.xlib.net_wm_window_type_dialog, 1);
 			if((create_info.flags & PLATFORM_WF_NO_BORDER) == 0) {
 				motif_hints_t h = {0};
 				h.flags = 2;
-				XChangeProperty(context->xlib.dpy, handle, context->xlib.motif_wm_hints,
-				                context->xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
+				XChangeProperty(context.xlib.dpy, handle, context.xlib.motif_wm_hints,
+				                context.xlib.motif_wm_hints, 32, PropModeReplace, (uint8_t*)&h, 5);
 			}
 		}
 		else {
 			attributes.override_redirect = 1;
-			XChangeWindowAttributes(context->xlib.dpy, handle, attributes_mask, &attributes);
+			XChangeWindowAttributes(context.xlib.dpy, handle, attributes_mask, &attributes);
 		}
 	}
 
@@ -156,12 +156,12 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	size_hints.flags = PPosition;
 	size_hints.x = create_info.x;
 	size_hints.y = create_info.y;
-	if(create_info.flags & PLATFORM_WF_RESIZABLE && context->xlib.net_wm_allowed_actions != None) {
-		Atom allowed_actions[1] = { context->xlib.net_wm_action_resize };
-		XChangeProperty(context->xlib.dpy, handle, context->xlib.net_wm_allowed_actions,
+	if(create_info.flags & PLATFORM_WF_RESIZABLE && context.xlib.net_wm_allowed_actions != None) {
+		Atom allowed_actions[1] = { context.xlib.net_wm_action_resize };
+		XChangeProperty(context.xlib.dpy, handle, context.xlib.net_wm_allowed_actions,
 						XA_ATOM, 32, PropModeAppend, (const uint8_t*)allowed_actions, 1);
 	}
-	XSetWMNormalHints(context->xlib.dpy, handle, &size_hints);
+	XSetWMNormalHints(context.xlib.dpy, handle, &size_hints);
 
 	platform_window_t* window = platform_allocator_alloc(sizeof(platform_window_t), 4, allocator);
 	window->handle = handle;
@@ -169,75 +169,75 @@ platform_window_t* xlib_create_window(platform_context_t* context, const platfor
 	window->user_data = NULL;
 	window->mapped = 0;
 	window->should_close = 0;
-	xlib_set_window_name(context, window, create_info.name);
+	xlib_set_window_name(window, create_info.name);
 
-	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) xlib_map_window(context, window);
-	XSaveContext(context->xlib.dpy, handle, 0, (const char*)window);
+	if((create_info.flags & PLATFORM_WF_UNMAPPED) == 0) xlib_map_window(window);
+	XSaveContext(context.xlib.dpy, handle, 0, (const char*)window);
 	return window;
 }
-void xlib_destroy_window(platform_context_t* context, platform_window_t* window, platform_allocation_callbacks_t* allocator) {
-	XDeleteContext(context->xlib.dpy, window->handle, 0);
-	XDestroyWindow(context->xlib.dpy, window->handle);
+void xlib_destroy_window(platform_window_t* window, platform_allocation_callbacks_t* allocator) {
+	XDeleteContext(context.xlib.dpy, window->handle, 0);
+	XDestroyWindow(context.xlib.dpy, window->handle);
 	platform_allocator_free(window, allocator);
-	XFlush(context->xlib.dpy);
+	XFlush(context.xlib.dpy);
 }
-void xlib_get_window_position(const platform_context_t* context, const platform_window_t* window, int32_t* x, int32_t* y) {
+void xlib_get_window_position(const platform_window_t* window, int32_t* x, int32_t* y) {
 	XWindowAttributes attributes;
-	XGetWindowAttributes(context->xlib.dpy, window->handle, &attributes);
+	XGetWindowAttributes(context.xlib.dpy, window->handle, &attributes);
 	if(x) *x = attributes.x;
 	if(x) *y = attributes.y;
 }
-void xlib_get_window_size(const platform_context_t* context, const platform_window_t* window, uint32_t* width, uint32_t* height) {
+void xlib_get_window_size(const platform_window_t* window, uint32_t* width, uint32_t* height) {
 	XWindowAttributes attributes;
-	XGetWindowAttributes(context->xlib.dpy, window->handle, &attributes);
+	XGetWindowAttributes(context.xlib.dpy, window->handle, &attributes);
 	if(width) *width = attributes.width;
 	if(height) *height = attributes.height;
 }
-void xlib_set_window_position(const platform_context_t* context, platform_window_t* window, const int32_t x, const int32_t y) {
-	XMoveWindow(context->xlib.dpy, window->handle, x, y);
+void xlib_set_window_position(platform_window_t* window, const int32_t x, const int32_t y) {
+	XMoveWindow(context.xlib.dpy, window->handle, x, y);
 }
-void xlib_set_window_size(const platform_context_t* context, platform_window_t* window, const uint32_t width, const uint32_t height) {
+void xlib_set_window_size(platform_window_t* window, const uint32_t width, const uint32_t height) {
 	XSetWindowAttributes new_attributes;
 	new_attributes.override_redirect = 1;
-	XChangeWindowAttributes(context->xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
-	XResizeWindow(context->xlib.dpy, window->handle, width, height);
+	XChangeWindowAttributes(context.xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
+	XResizeWindow(context.xlib.dpy, window->handle, width, height);
 	new_attributes.override_redirect = 0;
-	XChangeWindowAttributes(context->xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
+	XChangeWindowAttributes(context.xlib.dpy, window->handle, CWOverrideRedirect, &new_attributes);
 }
-void xlib_get_window_name(const platform_context_t* context, const platform_window_t* window, char* name, uint32_t max_len) {
+void xlib_get_window_name(const platform_window_t* window, char* name, uint32_t max_len) {
 	
 }
-void xlib_set_window_name(const platform_context_t* context, platform_window_t* window, const char* name) {
+void xlib_set_window_name(platform_window_t* window, const char* name) {
 	if(name == NULL) {
-		XDeleteProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_name);
-		XDeleteProperty(context->xlib.dpy, window->handle, XA_WM_NAME);
+		XDeleteProperty(context.xlib.dpy, window->handle, context.xlib.net_wm_name);
+		XDeleteProperty(context.xlib.dpy, window->handle, XA_WM_NAME);
 	}
 	else {
 		uint32_t len = 0;
 		while(name[len] != '\0') len++;
-		XChangeProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_name,
-		                context->xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
-		XChangeProperty(context->xlib.dpy, window->handle, XA_WM_NAME,
+		XChangeProperty(context.xlib.dpy, window->handle, context.xlib.net_wm_name,
+		                context.xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
+		XChangeProperty(context.xlib.dpy, window->handle, XA_WM_NAME,
 		                XA_STRING, 8, PropModeReplace, (const uint8_t*)name, len);
-		XChangeProperty(context->xlib.dpy, window->handle, XA_WM_ICON_NAME,
+		XChangeProperty(context.xlib.dpy, window->handle, XA_WM_ICON_NAME,
 		                XA_STRING, 8, PropModeReplace, (const uint8_t*)name, len);
-		XChangeProperty(context->xlib.dpy, window->handle, context->xlib.net_wm_icon_name,
-		                context->xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
+		XChangeProperty(context.xlib.dpy, window->handle, context.xlib.net_wm_icon_name,
+		                context.xlib.utf8_string, 8, PropModeReplace, (const uint8_t*)name, len);
 	}
 }
 
-void xlib_map_window(const platform_context_t* context, platform_window_t* window) {
-	XMapRaised(context->xlib.dpy, window->handle);
+void xlib_map_window(platform_window_t* window) {
+	XMapRaised(context.xlib.dpy, window->handle);
 }
-void xlib_unmap_window(const platform_context_t* context, platform_window_t* window) {
-	XUnmapWindow(context->xlib.dpy, window->handle);
+void xlib_unmap_window(platform_window_t* window) {
+	XUnmapWindow(context.xlib.dpy, window->handle);
 }
 
 int8_t xlib_window_should_close(const platform_window_t* window) {
 	return window->should_close;
 }
 
-char** xlib_vulkan_required_extensions(const platform_context_t* context, uint32_t* extension_count) {
+char** xlib_vulkan_required_extensions(uint32_t* extension_count) {
 	*extension_count = 2;
 	static char* extensions[] = {
 		"VK_KHR_surface",
@@ -246,13 +246,13 @@ char** xlib_vulkan_required_extensions(const platform_context_t* context, uint32
 	return extensions;
 }
 
-VkSurfaceKHR xlib_vulkan_create_surface(platform_context_t* context, platform_window_t* window, VkInstance instance) {
+VkSurfaceKHR xlib_vulkan_create_surface(platform_window_t* window, VkInstance instance) {
 	VkSurfaceKHR surface;
 	VkXlibSurfaceCreateInfoKHR create_info = {
 		VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
 		NULL,
 		0,
-		context->xlib.dpy,
+		context.xlib.dpy,
 		window->handle
 	};
 	VkResult surface_result = vkCreateXlibSurfaceKHR(instance, &create_info, NULL, &surface);
@@ -260,23 +260,23 @@ VkSurfaceKHR xlib_vulkan_create_surface(platform_context_t* context, platform_wi
 	return surface;
 }
 
-void xlib_handle_events(const platform_context_t* context) {
-	uint32_t event_count = XPending(context->xlib.dpy);
+void xlib_handle_events(void) {
+	uint32_t event_count = XPending(context.xlib.dpy);
 	for(uint32_t i = 0; i < event_count; i++) {
 		XEvent e;
-		XNextEvent(context->xlib.dpy, &e);
+		XNextEvent(context.xlib.dpy, &e);
 
 		platform_window_t* window;
-		int context_result = XFindContext(context->xlib.dpy, e.xany.window, 0, (XPointer*)&window);
+		int context_result = XFindContext(context.xlib.dpy, e.xany.window, 0, (XPointer*)&window);
 		if(context_result != 0) continue;
 
 		XWindowAttributes attributes;
-		XGetWindowAttributes(context->xlib.dpy, window->handle, &attributes);
+		XGetWindowAttributes(context.xlib.dpy, window->handle, &attributes);
 
 		switch (e.type)
 		{
 		case ClientMessage:
-			if(e.xclient.data.l[0] == context->xlib.wm_delete_window) {
+			if(e.xclient.data.l[0] == context.xlib.wm_delete_window) {
 				window->should_close = 1;
 			}
 			break;
@@ -284,7 +284,7 @@ void xlib_handle_events(const platform_context_t* context) {
 			//platform_terminal_print("Property Notify Event.\n", 0, 0, 0);
 			break;
 		case ResizeRequest:
-			xlib_set_window_size(context, window, e.xresizerequest.width, e.xresizerequest.height);
+			xlib_set_window_size(window, e.xresizerequest.width, e.xresizerequest.height);
 			break;
 		case CirculateNotify:
 			platform_terminal_print("Circulate Notify Event.\n", 0, 0, 0);
@@ -303,14 +303,14 @@ void xlib_handle_events(const platform_context_t* context) {
 			// window not resizable, at least on ubuntu
 			if((window->active_flags & PLATFORM_WF_RESIZABLE) == 0) {
 				uint32_t w, h;
-				xlib_get_window_size(context, window, &w, &h);
+				xlib_get_window_size(window, &w, &h);
 				XSizeHints size_hints;
 				window->mapped = 1;
 				size_hints.flags = PPosition;
 				size_hints.min_width = size_hints.max_width = w;
 				size_hints.min_height = size_hints.max_height = h;
 				size_hints.flags |= PMinSize | PMaxSize;
-				XSetWMNormalHints(context->xlib.dpy, window->handle, &size_hints);
+				XSetWMNormalHints(context.xlib.dpy, window->handle, &size_hints);
 			}
 
 			platform_terminal_print("Map Notify Event.\n", 0, 0, 0);

@@ -7,8 +7,7 @@
 
 int main(void) {
 	platform_terminal_print("Program Start...\n", PLATFORM_COLOR_BLUE, 0, 0);
-	platform_context_t* platform_context = platform_create_context(NULL, NULL);
-	if(platform_context == NULL) return -1;
+	if(!platform_init(NULL)) return -1;
 
 	platform_window_create_info_t create_info;
 	create_info.name = "Cat Window";
@@ -19,12 +18,12 @@ int main(void) {
 	create_info.parent = NULL;
 	create_info.flags = PLATFORM_WF_NORMAL;
 
-	platform_window_t* window = platform_create_window(platform_context, create_info, NULL);
-	if(window == NULL) return platform_destroy_context(platform_context, NULL), 0;
+	platform_window_t* window = platform_create_window(create_info, NULL);
+	if(window == NULL) return platform_shutdown(), 0;
 
 	uint32_t i = 0;
-	while(!platform_window_should_close(platform_context, window)) {
-		platform_handle_events(platform_context);
+	while(!platform_window_should_close(window)) {
+		platform_handle_events();
 		char buffer[32] = {0};
 		sprintf(buffer, "\rIteration: %d", i++);
 		platform_terminal_print(buffer, PLATFORM_COLOR_BLUE, 0, PLATFORM_TEXT_BOLD);
@@ -32,8 +31,8 @@ int main(void) {
 		platform_sleep_miliseconds(16);
 	}
 
-	platform_destroy_window(platform_context, window, NULL);
-	platform_destroy_context(platform_context, NULL);
+	platform_destroy_window(window, NULL);
+	platform_shutdown();
 
 	return 0;
 }
