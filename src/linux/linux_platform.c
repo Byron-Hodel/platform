@@ -12,7 +12,7 @@
 
 #include <vulkan/vulkan.h>
 
-linux_context_t context;
+linux_context_t linux_platform_context;
 
 void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator) {
 	if(allocator != NULL) {
@@ -33,61 +33,61 @@ void platform_allocator_free(void* addr, platform_allocation_callbacks_t* alloct
 }
 
 int8_t platform_init(const platform_settings_t* settings) {
-	if(xlib_init_context(&context.xlib) == 0) return 0;
-	context.window_functions = XLIB_WINDOW_FUNCTIONS;
+	if(xlib_init_context(&linux_platform_context.xlib) == 0) return 0;
+	linux_platform_context.window_functions = XLIB_WINDOW_FUNCTIONS;
 	return 1;
 }
 void platform_shutdown(void) {
-	xlib_cleanup_context(&context.xlib);
+	xlib_cleanup_context(&linux_platform_context.xlib);
 }
 
 
 platform_window_t* platform_create_window(const platform_window_create_info_t create_info, platform_allocation_callbacks_t* allocator) {
-	return context.window_functions.create_window(create_info, allocator);
+	return linux_platform_context.window_functions.create_window(create_info, allocator);
 }
 void platform_destroy_window(platform_window_t* window, platform_allocation_callbacks_t* allocator) {
-	context.window_functions.destroy_window(window, allocator);
+	linux_platform_context.window_functions.destroy_window(window, allocator);
 }
 void platform_get_window_position(const platform_window_t* window, int32_t* x, int32_t* y) {
-	context.window_functions.get_window_position(window, x, y);
+	linux_platform_context.window_functions.get_window_position(window, x, y);
 }
 void platform_get_window_size(const platform_window_t* window, uint32_t* width, uint32_t* height) {
-	context.window_functions.get_window_size(window, width, height);
+	linux_platform_context.window_functions.get_window_size(window, width, height);
 }
 void platform_set_window_position(platform_window_t* window, const int32_t x, const int32_t y) {
-	context.window_functions.set_window_position(window, x, y);
+	linux_platform_context.window_functions.set_window_position(window, x, y);
 }
 void platform_set_window_size(platform_window_t* window, const uint32_t width, const uint32_t height) {
-	context.window_functions.set_window_size(window, width, height);
+	linux_platform_context.window_functions.set_window_size(window, width, height);
 }
 void get_window_name(const platform_window_t* window, char* name, uint32_t max_len) {
-	return context.window_functions.get_window_name(window, name, max_len);
+	return linux_platform_context.window_functions.get_window_name(window, name, max_len);
 }
 void platform_set_window_name(platform_window_t* window, const char* name) {
-	context.window_functions.set_window_name(window, name);
+	linux_platform_context.window_functions.set_window_name(window, name);
 }
 
 void platform_map_window(platform_window_t* window) {
-	context.window_functions.map_window(window);
+	linux_platform_context.window_functions.map_window(window);
 }
 void platform_unmap_window(platform_window_t* window) {
-	context.window_functions.unmap_window(window);
+	linux_platform_context.window_functions.unmap_window(window);
 }
 
 int8_t platform_window_should_close(const platform_window_t* window) {
-	return context.window_functions.window_should_close(window);
+	return linux_platform_context.window_functions.window_should_close(window);
 }
 
 char** platform_vulkan_required_extensions(uint32_t* extension_count) {
-	return context.window_functions.vulkan_required_extensions(extension_count);
+	return linux_platform_context.window_functions.vulkan_required_extensions(extension_count);
 }
 
 VkSurfaceKHR platform_vulkan_create_surface(platform_window_t* window, VkInstance instance) {
-	return context.window_functions.vulkan_create_surface(window, instance);
+	return linux_platform_context.window_functions.vulkan_create_surface(window, instance);
 }
 
 void platform_handle_events(void) {
-	context.window_functions.handle_events();
+	linux_platform_context.window_functions.handle_events();
 }
 
 // NOTE: add 10 to get background color

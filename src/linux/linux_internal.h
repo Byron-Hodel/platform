@@ -52,7 +52,7 @@ typedef struct linux_context_t {
 	};
 	linux_window_functions_t window_functions;
 } linux_context_t;
-extern linux_context_t context;
+extern linux_context_t linux_platform_context;
 
 void* platform_allocator_alloc(uint64_t size, uint64_t alignment, platform_allocation_callbacks_t* allocator);
 void platform_allocator_free(void* addr, platform_allocation_callbacks_t* alloctor);
