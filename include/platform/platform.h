@@ -53,11 +53,11 @@ typedef struct {
 typedef struct platform_window_t platform_window_t;
 
 typedef struct {
-	char* name;
+	char*              name;
 	platform_window_t* parent;
-	int32_t x, y;
-	uint32_t width, height;
-	uint32_t flags;
+	int32_t            x, y;
+	uint32_t           width, height;
+	uint32_t           flags;
 } platform_window_create_info_t;
 
 typedef struct {

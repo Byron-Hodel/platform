@@ -15,11 +15,11 @@ int8_t xlib_init_context(xlib_context_t* context);
 void xlib_cleanup_context(xlib_context_t* context);
 
 struct platform_window_t {
-	Window handle;
+	Window   handle;
 	uint32_t active_flags;
-	void* user_data;
-	int8_t mapped;
-	int8_t should_close;
+	void*    user_data;
+	int8_t   mapped;
+	int8_t   should_close;
 };
 
 static inline Atom atom_supported(Atom a, Atom* supported_atoms, uint32_t supported_atom_count) {
